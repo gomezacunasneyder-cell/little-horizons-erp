@@ -1,0 +1,15 @@
+# Build and IDE
+target/
+out/
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+*.class
+
+# Local secrets and runtime output (never committed)
+/config.txt
+/error_log.txt
+/invoices/*.pdf

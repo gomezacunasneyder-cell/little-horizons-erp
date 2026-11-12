@@ -1,0 +1,7 @@
+# Copy this file as config.txt (same folder as pom.xml) and fill in your own values.
+# config.txt is ignored by git: it holds your database password.
+# One key=value per line. Lines starting with # and blank lines are ignored.
+# If your MySQL user has no password, keep the line "db.password=" empty.
+db.url=jdbc:mysql://localhost:3306/erp_little_horizons
+db.user=your_user
+db.password=your_password

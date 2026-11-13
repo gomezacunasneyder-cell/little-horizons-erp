@@ -6,6 +6,7 @@ import com.littlehorizons.erp.exception.InputClosedException;
 import com.littlehorizons.erp.exception.OperationCancelledException;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Main menu: groups the options by module and sends the user to each one. It contains no
@@ -27,11 +28,15 @@ public final class MainMenuView {
     private final ConsoleInput input;
     private final ConsoleOutput output;
     private final StartupController startup;
+    /** Menu option number (1-based) -> the module screen it opens. */
+    private final Map<Integer, MenuView> modules;
 
-    public MainMenuView(ConsoleInput input, ConsoleOutput output, StartupController startup) {
+    public MainMenuView(ConsoleInput input, ConsoleOutput output, StartupController startup,
+                        Map<Integer, MenuView> modules) {
         this.input = input;
         this.output = output;
         this.startup = startup;
+        this.modules = modules;
     }
 
     public void start() {
@@ -66,7 +71,12 @@ public final class MainMenuView {
             output.info("Hasta pronto.");
             return false;
         }
-        output.info("«" + OPTIONS.get(option - 1) + "» estará disponible en una próxima fase.");
+        MenuView module = modules.get(option);
+        if (module == null) {
+            output.info("«" + OPTIONS.get(option - 1) + "» estará disponible en una próxima fase.");
+        } else {
+            module.show();
+        }
         return true;
     }
 }

@@ -17,12 +17,14 @@ import java.util.regex.Pattern;
  */
 public abstract class Person {
 
-    public static final Pattern DOCUMENT_NUMBER_PATTERN = Pattern.compile("[A-Za-z0-9]{5,20}");
+    private static final Pattern NUMERIC_DOCUMENT_PATTERN = Pattern.compile("[0-9]{5,15}");
+    private static final Pattern PASSPORT_PATTERN = Pattern.compile("[A-Za-z0-9]{5,20}");
     public static final Pattern NAME_PATTERN = Pattern.compile("\\p{L}+(?:[ '\\-]\\p{L}+)*");
     public static final Pattern PHONE_PATTERN = Pattern.compile("\\+?[0-9]{7,15}");
     public static final Pattern EMAIL_PATTERN = Pattern.compile("[\\w.+\\-]+@[\\w\\-]+(\\.[\\w\\-]+)+");
 
-    public static final String DOCUMENT_NUMBER_MESSAGE = "El documento debe tener entre 5 y 20 letras o números, sin espacios.";
+    private static final String NUMERIC_DOCUMENT_MESSAGE = "El documento debe tener solo números (entre 5 y 15 dígitos), sin puntos ni espacios.";
+    private static final String PASSPORT_MESSAGE = "El pasaporte debe tener entre 5 y 20 letras o números, sin espacios.";
     public static final String NAME_MESSAGE = "Use solo letras (se permiten espacios, guion y apóstrofe).";
     public static final String PHONE_MESSAGE = "El teléfono debe tener entre 7 y 15 dígitos (puede iniciar con +).";
     public static final String EMAIL_MESSAGE = "Correo inválido. Ejemplo: nombre@dominio.com";
@@ -50,6 +52,18 @@ public abstract class Person {
     }
 
     // ---- validation helpers shared by Person and its subclasses ----
+
+    /**
+     * Validates a document number for the given type: TI, CC and CE are digits only, passports
+     * may also contain letters. Returns the trimmed number or throws {@link ValidationException}.
+     * Console forms call this so they reuse the exact rule of the entity.
+     */
+    public static String checkDocumentNumber(DocumentType type, String number) {
+        if (type == DocumentType.PASSPORT) {
+            return requireMatching(number, PASSPORT_PATTERN, PASSPORT_MESSAGE);
+        }
+        return requireMatching(number, NUMERIC_DOCUMENT_PATTERN, NUMERIC_DOCUMENT_MESSAGE);
+    }
 
     protected static String requireMatching(String value, Pattern pattern, String message) {
         if (value == null || !pattern.matcher(value.trim()).matches()) {
@@ -101,6 +115,9 @@ public abstract class Person {
         if (documentType == null) {
             throw new ValidationException("El tipo de documento es obligatorio.");
         }
+        if (documentNumber != null) {
+            checkDocumentNumber(documentType, documentNumber);
+        }
         this.documentType = documentType;
     }
 
@@ -109,7 +126,7 @@ public abstract class Person {
     }
 
     public void setDocumentNumber(String documentNumber) {
-        this.documentNumber = requireMatching(documentNumber, DOCUMENT_NUMBER_PATTERN, DOCUMENT_NUMBER_MESSAGE);
+        this.documentNumber = checkDocumentNumber(documentType, documentNumber);
     }
 
     public String getFirstName() {

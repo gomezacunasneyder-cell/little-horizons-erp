@@ -37,10 +37,9 @@ final class GuardianForm {
      */
     StudentGuardian readLink(boolean mustBePrincipal, List<String> alreadyChosen) {
         while (true) {
+            DocumentType type = input.readOption("Tipo de documento del acudiente: ", GUARDIAN_DOCUMENTS, DocumentType::getDisplayName);
             String document = input.read("Documento del acudiente: ", text -> {
-                if (!Person.DOCUMENT_NUMBER_PATTERN.matcher(text).matches()) {
-                    throw new ValidationException(Person.DOCUMENT_NUMBER_MESSAGE);
-                }
+                Person.checkDocumentNumber(type, text);
                 if (alreadyChosen.contains(text)) {
                     throw new ValidationException("Ese acudiente ya fue agregado.");
                 }
@@ -60,7 +59,7 @@ final class GuardianForm {
                 }
             } else {
                 output.info("Acudiente nuevo. Complete sus datos.");
-                guardian = readNewGuardian(document);
+                guardian = readNewGuardian(type, document);
             }
             boolean principal = mustBePrincipal || input.readYesNo("¿Es el acudiente principal?");
             boolean emergency = input.readYesNo("¿Es contacto de emergencia?");
@@ -69,8 +68,7 @@ final class GuardianForm {
         }
     }
 
-    private Guardian readNewGuardian(String document) {
-        DocumentType type = input.readOption("Tipo de documento: ", GUARDIAN_DOCUMENTS, DocumentType::getDisplayName);
+    private Guardian readNewGuardian(DocumentType type, String document) {
         String firstName = input.readMatching("Primer nombre: ", Person.NAME_PATTERN, Person.NAME_MESSAGE);
         String middleName = input.readOptionalMatching("Segundo nombre (Enter para omitir): ", Person.NAME_PATTERN, Person.NAME_MESSAGE);
         String lastName = input.readMatching("Primer apellido: ", Person.NAME_PATTERN, Person.NAME_MESSAGE);

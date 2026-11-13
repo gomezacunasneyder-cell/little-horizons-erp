@@ -55,6 +55,10 @@ public final class StudentModuleCheck {
 
             // ---- entity validation ----
             check("Student with an invalid document is rejected", () -> throwsValidation(() -> student("12", "Ana")));
+            check("Letters in a TI/CC/CE document are rejected", () -> throwsValidation(() -> student("ABC12345", "Ana"))
+                    && throwsValidation(() -> com.littlehorizons.erp.model.entity.Person.checkDocumentNumber(DocumentType.CC, "12a45678")));
+            check("Passport accepts letters and digits", () ->
+                    "AB1234567".equals(com.littlehorizons.erp.model.entity.Person.checkDocumentNumber(DocumentType.PASSPORT, "AB1234567")));
             check("Student with digits in the name is rejected", () -> throwsValidation(() -> student("99900000001", "An4")));
             check("Student born in the future is rejected", () -> throwsValidation(() ->
                     baseBuilder("99900000001", "Ana").birthDate(LocalDate.now().plusDays(1)).build()));

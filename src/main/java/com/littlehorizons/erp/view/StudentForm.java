@@ -29,10 +29,8 @@ final class StudentForm {
     Student readNewStudent() {
         DocumentType type = input.readOption("Tipo de documento: ", List.of(DocumentType.values()), DocumentType::getDisplayName);
         String document = input.read("Número de documento: ", text -> {
-            if (!Person.DOCUMENT_NUMBER_PATTERN.matcher(text).matches()) {
-                throw new ValidationException(Person.DOCUMENT_NUMBER_MESSAGE);
-            }
-            if (controller.findByDocument(text).isSuccess()) {
+            Person.checkDocumentNumber(type, text);
+            if (controller.findByDocument(text.trim()).isSuccess()) {
                 throw new ValidationException("Ya existe un estudiante con ese documento.");
             }
             return text;

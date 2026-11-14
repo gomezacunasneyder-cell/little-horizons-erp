@@ -1,5 +1,6 @@
 package com.littlehorizons.erp.view;
 
+import com.littlehorizons.erp.controller.GuardianController;
 import com.littlehorizons.erp.controller.Result;
 import com.littlehorizons.erp.controller.StudentController;
 import com.littlehorizons.erp.model.entity.Student;
@@ -23,6 +24,7 @@ public final class StudentMenuView extends AbstractMenuView {
             "Inscripción en materias");
 
     private final StudentController controller;
+    private final GuardianController guardians;
     private final StudentSelector selector;
     private final StudentPrinter printer;
     private final StudentForm studentForm;
@@ -32,13 +34,14 @@ public final class StudentMenuView extends AbstractMenuView {
     private final MenuView registrationMenu;
 
     public StudentMenuView(ConsoleInput input, ConsoleOutput output, StudentController controller,
-                           MenuView guardianMenu, MenuView enrollmentMenu, MenuView registrationMenu) {
+                           GuardianController guardians, MenuView guardianMenu, MenuView enrollmentMenu, MenuView registrationMenu) {
         super(input, output);
         this.controller = controller;
+        this.guardians = guardians;
         this.selector = new StudentSelector(input, output, controller);
         this.printer = new StudentPrinter(output);
         this.studentForm = new StudentForm(input, controller);
-        this.guardianForm = new GuardianForm(input, output, controller);
+        this.guardianForm = new GuardianForm(input, output, guardians);
         this.guardianMenu = guardianMenu;
         this.enrollmentMenu = enrollmentMenu;
         this.registrationMenu = registrationMenu;
@@ -118,12 +121,12 @@ public final class StudentMenuView extends AbstractMenuView {
         output.line("Alergias:          " + orDash(student.getAllergies()));
         output.line("Cond. médicas:     " + orDash(student.getMedicalConditions()));
 
-        Result<List<StudentGuardian>> guardians = controller.guardiansOf(student);
-        if (guardians.isSuccess()) {
+        Result<List<StudentGuardian>> links = guardians.guardiansOf(student);
+        if (links.isSuccess()) {
             output.title("Acudientes y contactos de emergencia");
-            printer.guardians(guardians.getData());
+            printer.guardians(links.getData());
         } else {
-            output.error(guardians.getMessage());
+            output.error(links.getMessage());
         }
     }
 

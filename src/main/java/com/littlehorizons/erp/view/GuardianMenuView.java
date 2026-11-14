@@ -1,6 +1,7 @@
 package com.littlehorizons.erp.view;
 
 import com.littlehorizons.erp.controller.Result;
+import com.littlehorizons.erp.controller.GuardianController;
 import com.littlehorizons.erp.controller.StudentController;
 import com.littlehorizons.erp.model.entity.Student;
 import com.littlehorizons.erp.model.entity.StudentGuardian;
@@ -18,15 +19,16 @@ public final class GuardianMenuView extends AbstractMenuView {
             "Editar datos de un acudiente",
             "Ver hermanos (estudiantes de un mismo acudiente)");
 
-    private final StudentController controller;
+    private final GuardianController controller;
     private final StudentSelector selector;
     private final StudentPrinter printer;
     private final GuardianForm form;
 
-    public GuardianMenuView(ConsoleInput input, ConsoleOutput output, StudentController controller) {
+    public GuardianMenuView(ConsoleInput input, ConsoleOutput output, StudentController students,
+                            GuardianController controller) {
         super(input, output);
         this.controller = controller;
-        this.selector = new StudentSelector(input, output, controller);
+        this.selector = new StudentSelector(input, output, students);
         this.printer = new StudentPrinter(output);
         this.form = new GuardianForm(input, output, controller);
     }

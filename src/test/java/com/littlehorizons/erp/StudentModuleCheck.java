@@ -1,6 +1,7 @@
 package com.littlehorizons.erp;
 
 import com.littlehorizons.erp.controller.EnrollmentController;
+import com.littlehorizons.erp.controller.GuardianController;
 import com.littlehorizons.erp.controller.Result;
 import com.littlehorizons.erp.controller.StudentController;
 import com.littlehorizons.erp.controller.SubjectRegistrationController;
@@ -19,7 +20,6 @@ import com.littlehorizons.erp.model.enums.AcademicPeriod;
 import com.littlehorizons.erp.model.enums.DocumentType;
 import com.littlehorizons.erp.model.enums.EnrollmentStatus;
 import com.littlehorizons.erp.model.enums.Gender;
-import com.littlehorizons.erp.model.enums.StudentStatus;
 import com.littlehorizons.erp.util.ErrorLogger;
 
 import java.sql.Connection;
@@ -28,7 +28,6 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 
 /**
@@ -44,7 +43,8 @@ public final class StudentModuleCheck {
     public static void main(String[] args) throws Exception {
         DaoFactory daos = new JdbcDaoFactory(DatabaseConnection.getInstance());
         ErrorLogger logger = ErrorLogger.getInstance();
-        StudentController students = new StudentController(daos.studentDao(), daos.guardianDao(), logger);
+        StudentController students = new StudentController(daos.studentDao(), logger);
+        GuardianController guardians = new GuardianController(daos.studentDao(), daos.guardianDao(), logger);
         EnrollmentController enrollments = new EnrollmentController(daos.enrollmentDao(), daos.gradeLevelDao(), logger);
         SubjectRegistrationController registrations = new SubjectRegistrationController(
                 daos.subjectRegistrationDao(), daos.subjectDao(), daos.enrollmentDao(), logger);
@@ -97,30 +97,30 @@ public final class StudentModuleCheck {
             check("Duplicate document fails with a message", () ->
                     !students.register(student("99900000001", "Otra"), new ArrayList<>(List.of(new StudentGuardian(guardian("99910000009", "X", "Abuelo"), true, true)))).isSuccess());
             check("The failed registration saved nothing (rollback)", () ->
-                    !students.findGuardian("99910000009").getData().isPresent());
+                    !guardians.findGuardian("99910000009").getData().isPresent());
 
             // ---- siblings share a guardian ----
             Student bob = student("99900000003", "Bob");
-            Guardian sameMother = students.findGuardian("99910000001").getData().orElseThrow();
+            Guardian sameMother = guardians.findGuardian("99910000001").getData().orElseThrow();
             check("A sibling reuses the existing guardian", () ->
                     students.register(bob, new ArrayList<>(List.of(new StudentGuardian(sameMother, true, true)))).isSuccess()
-                            && students.studentsOf(sameMother).getData().size() == 2);
+                            && guardians.studentsOf(sameMother).getData().size() == 2);
 
             // ---- guardians rules ----
             Guardian father = guardian("99910000002", "Pedro", "Padre");
-            check("Add a second guardian", () -> students.addGuardian(ana, new StudentGuardian(father, false, true)).isSuccess()
-                    && students.guardiansOf(ana).getData().size() == 2);
-            check("Adding the same guardian twice fails", () -> !students.addGuardian(ana, new StudentGuardian(father, false, true)).isSuccess());
-            StudentGuardian principal = students.guardiansOf(ana).getData().stream().filter(StudentGuardian::isPrincipal).findFirst().orElseThrow();
-            check("The principal guardian cannot be removed", () -> !students.removeGuardian(ana, principal).isSuccess());
+            check("Add a second guardian", () -> guardians.addGuardian(ana, new StudentGuardian(father, false, true)).isSuccess()
+                    && guardians.guardiansOf(ana).getData().size() == 2);
+            check("Adding the same guardian twice fails", () -> !guardians.addGuardian(ana, new StudentGuardian(father, false, true)).isSuccess());
+            StudentGuardian principal = guardians.guardiansOf(ana).getData().stream().filter(StudentGuardian::isPrincipal).findFirst().orElseThrow();
+            check("The principal guardian cannot be removed", () -> !guardians.removeGuardian(ana, principal).isSuccess());
             check("Change the principal guardian", () -> {
-                StudentGuardian other = students.guardiansOf(ana).getData().stream().filter(l -> !l.isPrincipal()).findFirst().orElseThrow();
-                return students.changePrincipalGuardian(ana, other).isSuccess()
-                        && students.guardiansOf(ana).getData().stream().filter(StudentGuardian::isPrincipal).count() == 1;
+                StudentGuardian other = guardians.guardiansOf(ana).getData().stream().filter(l -> !l.isPrincipal()).findFirst().orElseThrow();
+                return guardians.changePrincipalGuardian(ana, other).isSuccess()
+                        && guardians.guardiansOf(ana).getData().stream().filter(StudentGuardian::isPrincipal).count() == 1;
             });
             check("A non-principal guardian can be removed", () -> {
-                StudentGuardian nonPrincipal = students.guardiansOf(ana).getData().stream().filter(l -> !l.isPrincipal()).findFirst().orElseThrow();
-                return students.removeGuardian(ana, nonPrincipal).isSuccess() && students.guardiansOf(ana).getData().size() == 1;
+                StudentGuardian nonPrincipal = guardians.guardiansOf(ana).getData().stream().filter(l -> !l.isPrincipal()).findFirst().orElseThrow();
+                return guardians.removeGuardian(ana, nonPrincipal).isSuccess() && guardians.guardiansOf(ana).getData().size() == 1;
             });
             check("The DAO refuses to remove the last guardian", () -> {
                 try {

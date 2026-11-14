@@ -1,7 +1,7 @@
 package com.littlehorizons.erp.view;
 
 import com.littlehorizons.erp.controller.Result;
-import com.littlehorizons.erp.controller.StudentController;
+import com.littlehorizons.erp.controller.GuardianController;
 import com.littlehorizons.erp.exception.ValidationException;
 import com.littlehorizons.erp.model.entity.Guardian;
 import com.littlehorizons.erp.model.entity.Person;
@@ -25,9 +25,9 @@ final class GuardianForm {
     private static final java.util.regex.Pattern RELATIONSHIP_CHOICE = java.util.regex.Pattern.compile(
             "(?i)" + String.join("|", Guardian.RELATIONSHIPS));
     private final ConsoleOutput output;
-    private final StudentController controller;
+    private final GuardianController controller;
 
-    GuardianForm(ConsoleInput input, ConsoleOutput output, StudentController controller) {
+    GuardianForm(ConsoleInput input, ConsoleOutput output, GuardianController controller) {
         this.input = input;
         this.output = output;
         this.controller = controller;

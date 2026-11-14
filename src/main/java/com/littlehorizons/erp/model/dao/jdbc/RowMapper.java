@@ -143,6 +143,19 @@ final class RowMapper {
         return record;
     }
 
+    /**
+     * One row of the attendance SELECT: student and subject columns plus the attendance columns and
+     * the aliases teacher_id and teacher_name.
+     */
+    static AttendanceRecord attendanceRecord(ResultSet rs) throws SQLException {
+        AttendanceRecord record = new AttendanceRecord(student(rs), subject(rs), date(rs, "fecha_asistencia"),
+                DbEnumLookup.fromDbLabel(AttendanceStatus.class, rs.getString("estado_asistencia")),
+                rs.getInt("teacher_id"), rs.getString("teacher_name"));
+        record.setId(rs.getInt("id_asistencia"));
+        record.setObservations(rs.getString("observaciones"));
+        return record;
+    }
+
     private static LocalTime time(ResultSet rs, String column) throws SQLException {
         Time value = rs.getTime(column);
         return value.toLocalTime();

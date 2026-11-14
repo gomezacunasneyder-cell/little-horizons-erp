@@ -26,4 +26,6 @@ public interface DaoFactory {
     ScheduleDao scheduleDao();
 
     AcademicRecordDao academicRecordDao();
+
+    AttendanceDao attendanceDao();
 }

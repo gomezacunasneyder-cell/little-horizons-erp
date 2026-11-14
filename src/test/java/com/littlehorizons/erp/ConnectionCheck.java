@@ -17,7 +17,7 @@ import java.sql.SQLException;
  * database loaded and config.txt in place. Every check prints PASS or FAIL; the process exit
  * code is 1 if any check fails.
  */
-public final class ConnectionCheck {w
+public final class ConnectionCheck {
 
     private static int failures = 0;
 

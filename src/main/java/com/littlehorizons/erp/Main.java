@@ -2,18 +2,23 @@ package com.littlehorizons.erp;
 
 import com.littlehorizons.erp.controller.AssignmentController;
 import com.littlehorizons.erp.controller.EnrollmentController;
+import com.littlehorizons.erp.controller.GradeController;
 import com.littlehorizons.erp.controller.ScheduleController;
 import com.littlehorizons.erp.controller.StartupController;
 import com.littlehorizons.erp.controller.StudentController;
 import com.littlehorizons.erp.controller.SubjectRegistrationController;
 import com.littlehorizons.erp.controller.TeacherController;
+import com.littlehorizons.erp.controller.grading.GradingStrategies;
 import com.littlehorizons.erp.model.dao.DaoFactory;
 import com.littlehorizons.erp.model.dao.jdbc.JdbcDaoFactory;
 import com.littlehorizons.erp.model.dao.jdbc.DatabaseConnection;
+import com.littlehorizons.erp.util.AppConfig;
 import com.littlehorizons.erp.util.ErrorLogger;
+import com.littlehorizons.erp.view.AcademicMenuView;
 import com.littlehorizons.erp.view.AssignmentMenuView;
 import com.littlehorizons.erp.view.ConsoleInput;
 import com.littlehorizons.erp.view.EnrollmentMenuView;
+import com.littlehorizons.erp.view.GradeMenuView;
 import com.littlehorizons.erp.view.GuardianMenuView;
 import com.littlehorizons.erp.view.MenuView;
 import com.littlehorizons.erp.view.StudentMenuView;
@@ -52,6 +57,9 @@ public final class Main {
                 daos.scheduleDao(), daos.subjectDao(), daos.gradeLevelDao(), logger);
         ScheduleController schedules = new ScheduleController(daos.scheduleDao(), logger);
 
+        GradeController gradeController = new GradeController(daos.academicRecordDao(), daos.subjectRegistrationDao(),
+                daos.teachingAssignmentDao(), () -> GradingStrategies.fromConfig(AppConfig.getInstance()), logger);
+
         MenuView studentModule = new StudentMenuView(input, output, students,
                 new GuardianMenuView(input, output, students),
                 new EnrollmentMenuView(input, output, enrollments, students),
@@ -60,6 +68,10 @@ public final class Main {
         MenuView teacherModule = new TeacherMenuView(input, output, teachers,
                 new AssignmentMenuView(input, output, assignments, schedules, teachers));
 
-        new MainMenuView(input, output, startup, Map.of(1, studentModule, 3, teacherModule)).start();
+        MenuView academicModule = new AcademicMenuView(input, output,
+                new GradeMenuView(input, output, gradeController, assignments, teachers, students));
+
+        new MainMenuView(input, output, startup,
+                Map.of(1, studentModule, 2, academicModule, 3, teacherModule)).start();
     }
 }

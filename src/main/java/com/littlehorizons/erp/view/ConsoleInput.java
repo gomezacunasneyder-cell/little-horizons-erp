@@ -4,6 +4,10 @@ import com.littlehorizons.erp.exception.InputClosedException;
 import com.littlehorizons.erp.exception.OperationCancelledException;
 import com.littlehorizons.erp.exception.ValidationException;
 
+import com.littlehorizons.erp.model.entity.AcademicRecord;
+import com.littlehorizons.erp.model.entity.Enrollment;
+
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -139,6 +143,31 @@ public final class ConsoleInput {
             } catch (DateTimeParseException e) {
                 throw new ValidationException("Hora inválida. Use el formato HH:mm (ejemplo: 07:30).");
             }
+        });
+    }
+
+    /** Reads a grade between 0.0 and 5.0 with at most one decimal ("4.2" or "4,2"). */
+    public BigDecimal readGrade(String prompt) {
+        return read(prompt, AcademicRecord::parseGrade);
+    }
+
+    /** Same as readGrade but an empty answer returns null (skip). */
+    public BigDecimal readOptionalGrade(String prompt) {
+        return read(prompt, text -> text.isEmpty() ? null : AcademicRecord.parseGrade(text));
+    }
+
+    /** Academic year: Enter means the current year. */
+    public int readAcademicYear() {
+        int current = LocalDate.now().getYear();
+        return read("Año académico (Enter = " + current + "): ", text -> {
+            if (text.isEmpty()) {
+                return current;
+            }
+            int year = Integer.parseInt(text);
+            if (year < Enrollment.MIN_YEAR || year > current + 1) {
+                throw new ValidationException("El año debe estar entre " + Enrollment.MIN_YEAR + " y " + (current + 1) + ".");
+            }
+            return year;
         });
     }
 

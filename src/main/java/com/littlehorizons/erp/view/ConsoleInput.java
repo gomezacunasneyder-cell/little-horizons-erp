@@ -5,7 +5,9 @@ import com.littlehorizons.erp.exception.OperationCancelledException;
 import com.littlehorizons.erp.exception.ValidationException;
 
 import com.littlehorizons.erp.model.entity.AcademicRecord;
+import com.littlehorizons.erp.model.entity.AttendanceRecord;
 import com.littlehorizons.erp.model.entity.Enrollment;
+import com.littlehorizons.erp.model.enums.AttendanceStatus;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -154,6 +156,36 @@ public final class ConsoleInput {
     /** Same as readGrade but an empty answer returns null (skip). */
     public BigDecimal readOptionalGrade(String prompt) {
         return read(prompt, text -> text.isEmpty() ? null : AcademicRecord.parseGrade(text));
+    }
+
+    /** A school day (Monday to Friday, not in the future). Enter means today. */
+    public LocalDate readSchoolDate(String prompt) {
+        return read(prompt, text -> AttendanceRecord.checkSchoolDay(text.isEmpty() ? LocalDate.now() : LocalDate.parse(text)));
+    }
+
+    /** A date (aaaa-mm-dd) that may be in the past or today; Enter returns the default given. */
+    public LocalDate readDateOrDefault(String prompt, LocalDate defaultDate) {
+        return read(prompt, text -> {
+            LocalDate date = text.isEmpty() ? defaultDate : LocalDate.parse(text);
+            if (date.isAfter(LocalDate.now())) {
+                throw new ValidationException("La fecha no puede estar en el futuro.");
+            }
+            return date;
+        });
+    }
+
+    /** Attendance state: 1 Presente (also Enter), 2 Ausente, 3 Tardanza, 4 Excusa Médica. */
+    public AttendanceStatus readAttendanceStatus(String prompt) {
+        return read(prompt, text -> {
+            if (text.isEmpty()) {
+                return AttendanceStatus.PRESENT;
+            }
+            int choice = Integer.parseInt(text);
+            if (choice < 1 || choice > AttendanceStatus.values().length) {
+                throw new ValidationException("Escriba un número entre 1 y " + AttendanceStatus.values().length + ".");
+            }
+            return AttendanceStatus.values()[choice - 1];
+        });
     }
 
     /** Academic year: Enter means the current year. */

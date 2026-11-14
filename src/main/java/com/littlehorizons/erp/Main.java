@@ -1,13 +1,19 @@
 package com.littlehorizons.erp;
 
 import com.littlehorizons.erp.controller.AssignmentController;
+import com.littlehorizons.erp.controller.AttendanceController;
+import com.littlehorizons.erp.controller.AttendanceReportController;
+import com.littlehorizons.erp.controller.ClassAccessPolicy;
 import com.littlehorizons.erp.controller.EnrollmentController;
 import com.littlehorizons.erp.controller.GradeController;
+import com.littlehorizons.erp.controller.GradeReportController;
+import com.littlehorizons.erp.controller.GuardianController;
 import com.littlehorizons.erp.controller.ScheduleController;
 import com.littlehorizons.erp.controller.StartupController;
 import com.littlehorizons.erp.controller.StudentController;
 import com.littlehorizons.erp.controller.SubjectRegistrationController;
 import com.littlehorizons.erp.controller.TeacherController;
+import com.littlehorizons.erp.controller.attendance.AttendanceSettings;
 import com.littlehorizons.erp.controller.grading.GradingStrategies;
 import com.littlehorizons.erp.model.dao.DaoFactory;
 import com.littlehorizons.erp.model.dao.jdbc.JdbcDaoFactory;
@@ -15,6 +21,7 @@ import com.littlehorizons.erp.model.dao.jdbc.DatabaseConnection;
 import com.littlehorizons.erp.util.AppConfig;
 import com.littlehorizons.erp.util.ErrorLogger;
 import com.littlehorizons.erp.view.AcademicMenuView;
+import com.littlehorizons.erp.view.AttendanceMenuView;
 import com.littlehorizons.erp.view.AssignmentMenuView;
 import com.littlehorizons.erp.view.ConsoleInput;
 import com.littlehorizons.erp.view.EnrollmentMenuView;
@@ -47,7 +54,8 @@ public final class Main {
         ErrorLogger logger = ErrorLogger.getInstance();
         DaoFactory daos = new JdbcDaoFactory(DatabaseConnection.getInstance());
 
-        StudentController students = new StudentController(daos.studentDao(), daos.guardianDao(), logger);
+        StudentController students = new StudentController(daos.studentDao(), logger);
+        GuardianController guardians = new GuardianController(daos.studentDao(), daos.guardianDao(), logger);
         EnrollmentController enrollments = new EnrollmentController(daos.enrollmentDao(), daos.gradeLevelDao(), logger);
         SubjectRegistrationController registrations = new SubjectRegistrationController(
                 daos.subjectRegistrationDao(), daos.subjectDao(), daos.enrollmentDao(), logger);
@@ -57,11 +65,20 @@ public final class Main {
                 daos.scheduleDao(), daos.subjectDao(), daos.gradeLevelDao(), logger);
         ScheduleController schedules = new ScheduleController(daos.scheduleDao(), logger);
 
-        GradeController gradeController = new GradeController(daos.academicRecordDao(), daos.subjectRegistrationDao(),
-                daos.teachingAssignmentDao(), () -> GradingStrategies.fromConfig(AppConfig.getInstance()), logger);
+        ClassAccessPolicy classAccess = new ClassAccessPolicy(daos.subjectRegistrationDao(), daos.teachingAssignmentDao());
 
-        MenuView studentModule = new StudentMenuView(input, output, students,
-                new GuardianMenuView(input, output, students),
+        GradeController gradeController = new GradeController(daos.academicRecordDao(), daos.subjectRegistrationDao(),
+                classAccess,
+                () -> GradingStrategies.fromConfig(AppConfig.getInstance()), logger);
+        GradeReportController gradeReports = new GradeReportController(daos.academicRecordDao(), logger);
+
+        AttendanceController attendance = new AttendanceController(daos.attendanceDao(),
+                daos.subjectRegistrationDao(), classAccess, logger);
+        AttendanceReportController attendanceReports = new AttendanceReportController(daos.attendanceDao(),
+                () -> AttendanceSettings.weeklyAbsenceLimit(AppConfig.getInstance()), logger);
+
+        MenuView studentModule = new StudentMenuView(input, output, students, guardians,
+                new GuardianMenuView(input, output, students, guardians),
                 new EnrollmentMenuView(input, output, enrollments, students),
                 new SubjectRegistrationMenuView(input, output, registrations, students));
 
@@ -69,7 +86,8 @@ public final class Main {
                 new AssignmentMenuView(input, output, assignments, schedules, teachers));
 
         MenuView academicModule = new AcademicMenuView(input, output,
-                new GradeMenuView(input, output, gradeController, assignments, teachers, students));
+                new GradeMenuView(input, output, gradeController, gradeReports, assignments, teachers, students),
+                new AttendanceMenuView(input, output, attendance, attendanceReports, assignments, teachers, students));
 
         new MainMenuView(input, output, startup,
                 Map.of(1, studentModule, 2, academicModule, 3, teacherModule)).start();

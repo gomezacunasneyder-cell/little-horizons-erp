@@ -2,6 +2,7 @@ package com.littlehorizons.erp.view;
 
 import com.littlehorizons.erp.controller.AssignmentController;
 import com.littlehorizons.erp.controller.GradeController;
+import com.littlehorizons.erp.controller.GradeReportController;
 import com.littlehorizons.erp.controller.Result;
 import com.littlehorizons.erp.controller.RosterEntry;
 import com.littlehorizons.erp.controller.StudentController;
@@ -35,15 +36,18 @@ public final class GradeMenuView extends AbstractMenuView {
     private static final List<AcademicPeriod> ALL_PERIODS = List.of(AcademicPeriod.values());
 
     private final GradeController grades;
+    private final GradeReportController reports;
     private final AssignmentController assignments;
     private final EntitySelector<Teacher> teacherSelector;
     private final StudentSelector studentSelector;
     private final ResultPrinter printer;
 
     public GradeMenuView(ConsoleInput input, ConsoleOutput output, GradeController grades,
-                         AssignmentController assignments, TeacherController teachers, StudentController students) {
+                         GradeReportController reports, AssignmentController assignments,
+                         TeacherController teachers, StudentController students) {
         super(input, output);
         this.grades = grades;
+        this.reports = reports;
         this.assignments = assignments;
         this.teacherSelector = TeacherMenuView.teacherSelector(input, output, teachers);
         this.studentSelector = new StudentSelector(input, output, students);
@@ -168,7 +172,7 @@ public final class GradeMenuView extends AbstractMenuView {
     private void showYearReport() {
         Student student = studentSelector.select();
         int year = input.readAcademicYear();
-        Result<YearReport> result = grades.yearReport(student, year);
+        Result<YearReport> result = reports.yearReport(student, year);
         if (!result.isSuccess()) {
             output.error(result.getMessage());
             return;
@@ -179,7 +183,7 @@ public final class GradeMenuView extends AbstractMenuView {
 
     private void showHistory() {
         Student student = studentSelector.select();
-        Result<List<YearReport>> result = grades.history(student);
+        Result<List<YearReport>> result = reports.history(student);
         if (!result.isSuccess()) {
             output.error(result.getMessage());
             return;
@@ -197,7 +201,7 @@ public final class GradeMenuView extends AbstractMenuView {
         GradeLevel grade = input.readOption("Grado: ", levels.getData(), GradeLevel::getName);
         int year = input.readAcademicYear();
         AcademicPeriod period = readPeriod();
-        Result<List<CourseSubjectAverage>> result = grades.courseAverages(grade, year, period);
+        Result<List<CourseSubjectAverage>> result = reports.courseAverages(grade, year, period);
         if (!result.isSuccess()) {
             output.error(result.getMessage());
             return;

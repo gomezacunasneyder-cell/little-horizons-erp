@@ -1,15 +1,16 @@
 package com.littlehorizons.erp;
 
 import com.littlehorizons.erp.controller.AssignmentController;
+import com.littlehorizons.erp.controller.ClassAccessPolicy;
 import com.littlehorizons.erp.controller.EnrollmentController;
 import com.littlehorizons.erp.controller.GradeController;
+import com.littlehorizons.erp.controller.GradeReportController;
 import com.littlehorizons.erp.controller.Result;
 import com.littlehorizons.erp.controller.RosterEntry;
 import com.littlehorizons.erp.controller.StudentController;
 import com.littlehorizons.erp.controller.SubjectRegistrationController;
 import com.littlehorizons.erp.controller.TeacherController;
 import com.littlehorizons.erp.controller.grading.CourseSubjectAverage;
-import com.littlehorizons.erp.controller.grading.FinalGradeStrategy;
 import com.littlehorizons.erp.controller.grading.GradeAverages;
 import com.littlehorizons.erp.controller.grading.SimpleAverageStrategy;
 import com.littlehorizons.erp.controller.grading.SubjectSummary;
@@ -61,17 +62,19 @@ public final class GradeModuleCheck {
     public static void main(String[] args) throws Exception {
         DaoFactory daos = new JdbcDaoFactory(DatabaseConnection.getInstance());
         ErrorLogger logger = ErrorLogger.getInstance();
-        StudentController students = new StudentController(daos.studentDao(), daos.guardianDao(), logger);
+        StudentController students = new StudentController(daos.studentDao(), logger);
         TeacherController teachers = new TeacherController(daos.teacherDao(), logger);
         EnrollmentController enrollments = new EnrollmentController(daos.enrollmentDao(), daos.gradeLevelDao(), logger);
         SubjectRegistrationController registrations = new SubjectRegistrationController(
                 daos.subjectRegistrationDao(), daos.subjectDao(), daos.enrollmentDao(), logger);
         AssignmentController assignments = new AssignmentController(daos.teachingAssignmentDao(),
                 daos.scheduleDao(), daos.subjectDao(), daos.gradeLevelDao(), logger);
+        ClassAccessPolicy policy = new ClassAccessPolicy(daos.subjectRegistrationDao(), daos.teachingAssignmentDao());
         GradeController grades = new GradeController(daos.academicRecordDao(), daos.subjectRegistrationDao(),
-                daos.teachingAssignmentDao(), SimpleAverageStrategy::new, logger);
+                policy, SimpleAverageStrategy::new, logger);
         GradeController weightedGrades = new GradeController(daos.academicRecordDao(), daos.subjectRegistrationDao(),
-                daos.teachingAssignmentDao(), () -> new WeightedAverageStrategy(List.of(20, 20, 30, 30)), logger);
+                policy, () -> new WeightedAverageStrategy(List.of(20, 20, 30, 30)), logger);
+        GradeReportController reports = new GradeReportController(daos.academicRecordDao(), logger);
         int year = LocalDate.now().getYear() + 1;
         AcademicPeriod p1 = AcademicPeriod.FIRST;
         AcademicPeriod p2 = AcademicPeriod.SECOND;
@@ -162,6 +165,10 @@ public final class GradeModuleCheck {
             Result<AcademicRecord> first = grades.record(ana, s1, math, year, p1, AcademicRecord.parseGrade("4.2"), "Buen inicio de año");
             check("Register a grade", () -> first.isSuccess() && first.getData().getId() != null
                     && first.getData().getGrade().equals(new BigDecimal("4.2")) && first.getData().getTeacherId() == ana.getId());
+            check("The access policy alone: allowed for the right teacher, denied for another group", () ->
+                    policy.denialReason(ana, s1, math, year, p2).isEmpty()
+                            && policy.denialReason(luis, s1, math, year, p2).isPresent()
+                            && policy.denialReason(eva, s1, third, year, p2).isPresent());
             check("A second grade for the same period is refused and points to the correction", () -> {
                 Result<AcademicRecord> r = grades.record(ana, s1, math, year, p1, AcademicRecord.parseGrade("3.0"), null);
                 return !r.isSuccess() && r.getMessage().contains("Corregir");
@@ -232,7 +239,7 @@ public final class GradeModuleCheck {
             });
             check("A wrong policy gives a clear failure instead of an exception", () -> {
                 GradeController broken = new GradeController(daos.academicRecordDao(), daos.subjectRegistrationDao(),
-                        daos.teachingAssignmentDao(), () -> { throw new ConfigurationException("política inválida"); }, logger);
+                        policy, () -> { throw new ConfigurationException("política inválida"); }, logger);
                 Result<AcademicRecord> r = broken.generateFinal(ana, s1, math, year);
                 return !r.isSuccess() && r.getMessage().contains("política inválida");
             });
@@ -253,7 +260,7 @@ public final class GradeModuleCheck {
             // ---- averages ----
             grades.record(luis, s1, other, year, p1, AcademicRecord.parseGrade("4.0"), null);
             grades.record(luis, s2, math, year, p1, AcademicRecord.parseGrade("3.0"), null);
-            Result<YearReport> report = grades.yearReport(s1, year);
+            Result<YearReport> report = reports.yearReport(s1, year);
             check("Year report: average per subject and Final", () -> {
                 SubjectSummary mathSummary = report.getData().subjects().stream()
                         .filter(s -> s.subject().getId() == math.getId()).findFirst().orElseThrow();
@@ -266,32 +273,32 @@ public final class GradeModuleCheck {
                             && report.getData().periodAverages().get(p2).equals(new BigDecimal("3.00"))
                             && report.getData().yearAverage().equals(new BigDecimal("3.75")));
             check("A student without grades gets a clear message", () -> {
-                Result<YearReport> r = grades.yearReport(s4, year);
+                Result<YearReport> r = reports.yearReport(s4, year);
                 return !r.isSuccess() && r.getMessage().contains("no tiene notas");
             });
             check("Course average of a subject (lowest, highest, students)", () -> {
-                List<CourseSubjectAverage> list = grades.courseAverages(fifth, year, p1).getData();
+                List<CourseSubjectAverage> list = reports.courseAverages(fifth, year, p1).getData();
                 CourseSubjectAverage mathAverage = list.stream().filter(c -> c.subject().getId() == math.getId()).findFirst().orElseThrow();
                 return list.size() == 2 && mathAverage.students() == 3
                         && mathAverage.average().equals(new BigDecimal("2.80"))
                         && mathAverage.lowest().equals(new BigDecimal("2.0"))
                         && mathAverage.highest().equals(new BigDecimal("3.4"));
             });
-            check("A period without grades gives a clear message", () -> !grades.courseAverages(fifth, year, p3).isSuccess()
-                    || grades.courseAverages(fifth, year, p3).getData().stream().allMatch(c -> c.students() > 0));
+            check("A period without grades gives a clear message", () -> !reports.courseAverages(fifth, year, p3).isSuccess()
+                    || reports.courseAverages(fifth, year, p3).getData().stream().allMatch(c -> c.students() > 0));
             check("Average of nothing is empty", () -> GradeAverages.average(java.util.stream.Stream.empty()).isEmpty());
 
             // ---- academic history with the sample data ----
             Student old = findStudentWithTwoYears(daos);
             check("The sample data has grades of 2025 and 2026 for the same student", () -> old != null);
             check("History lists the years in order with their averages", () -> {
-                Result<List<YearReport>> history = grades.history(old);
+                Result<List<YearReport>> history = reports.history(old);
                 List<YearReport> years = history.getData();
                 return history.isSuccess() && years.size() >= 2 && years.get(0).year() < years.get(1).year()
                         && years.stream().allMatch(y -> y.yearAverage() != null && !y.subjects().isEmpty());
             });
-            check("History of a student without grades gives a message", () -> !grades.history(s4).isSuccess()
-                    || grades.history(s4).getData().size() == 1);
+            check("History of a student without grades gives a message", () -> !reports.history(s4).isSuccess()
+                    || reports.history(s4).getData().size() == 1);
 
             // ---- sample data consistency ----
             check("The sample data has at least 30 grades", () -> scalar("SELECT COUNT(*) FROM registros_academicos WHERE anio_academico <= " + (year - 1)) >= 30);

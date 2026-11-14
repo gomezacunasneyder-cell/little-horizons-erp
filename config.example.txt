@@ -5,3 +5,9 @@
 db.url=jdbc:mysql://localhost:3306/erp_little_horizons
 db.user=your_user
 db.password=your_password
+
+# --- Optional: how the Final grade of a subject is computed from periods I-IV (module 1.3) ---
+# If these keys are missing the program uses the simple average.
+# grading.final.strategy=simple
+# grading.final.strategy=weighted
+# grading.final.weights=20,20,30,30

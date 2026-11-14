@@ -95,6 +95,30 @@ public class JdbcSubjectRegistrationDao implements SubjectRegistrationDao {
     }
 
     @Override
+    public List<SubjectRegistration> findBySubjectYearPeriodAndSection(int subjectId, int academicYear,
+                                                                       AcademicPeriod period, String section) throws DaoException {
+        String sql = SELECT + "WHERE i.id_materia = ? AND i.anio_academico = ? AND i.periodo_academico = ? "
+                + "AND (i.seccion = ? OR i.seccion IS NULL) AND i.estado <> 'Retirada' "
+                + "ORDER BY e.primer_apellido, e.segundo_apellido, e.primer_nombre";
+        try (Connection connection = database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, subjectId);
+            statement.setInt(2, academicYear);
+            statement.setString(3, period.getDbLabel());
+            statement.setString(4, section);
+            try (ResultSet rs = statement.executeQuery()) {
+                List<SubjectRegistration> registrations = new ArrayList<>();
+                while (rs.next()) {
+                    registrations.add(RowMapper.registration(rs));
+                }
+                return registrations;
+            }
+        } catch (SQLException e) {
+            throw new DaoException(SqlErrorTranslator.toUserMessage(e), e);
+        }
+    }
+
+    @Override
     public void updateStatus(int registrationId, RegistrationStatus status) throws DaoException {
         try (Connection connection = database.getConnection();
              PreparedStatement statement = connection.prepareStatement(

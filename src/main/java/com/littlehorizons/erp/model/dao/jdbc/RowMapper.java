@@ -129,6 +129,20 @@ final class RowMapper {
         return slot;
     }
 
+    /**
+     * Needs the columns of estudiantes, materias and grados plus the ones of registros_academicos
+     * and the aliases teacher_id and teacher_name (the teacher is not loaded as a whole entity).
+     */
+    static AcademicRecord academicRecord(ResultSet rs) throws SQLException {
+        AcademicRecord record = new AcademicRecord(student(rs), subject(rs), rs.getInt("anio_academico"),
+                DbEnumLookup.fromDbLabel(AcademicPeriod.class, rs.getString("periodo_academico")),
+                rs.getBigDecimal("valor_nota"), rs.getInt("teacher_id"), rs.getString("teacher_name"),
+                date(rs, "fecha_registro"));
+        record.setId(rs.getInt("id_registro"));
+        record.setObservations(rs.getString("observaciones"));
+        return record;
+    }
+
     private static LocalTime time(ResultSet rs, String column) throws SQLException {
         Time value = rs.getTime(column);
         return value.toLocalTime();

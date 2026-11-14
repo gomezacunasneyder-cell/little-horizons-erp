@@ -24,4 +24,6 @@ public interface DaoFactory {
     TeachingAssignmentDao teachingAssignmentDao();
 
     ScheduleDao scheduleDao();
+
+    AcademicRecordDao academicRecordDao();
 }

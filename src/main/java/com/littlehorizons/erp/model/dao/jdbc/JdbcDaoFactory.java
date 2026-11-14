@@ -55,4 +55,9 @@ public final class JdbcDaoFactory implements DaoFactory {
     public ScheduleDao scheduleDao() {
         return new JdbcScheduleDao(database);
     }
+
+    @Override
+    public AcademicRecordDao academicRecordDao() {
+        return new JdbcAcademicRecordDao(database);
+    }
 }

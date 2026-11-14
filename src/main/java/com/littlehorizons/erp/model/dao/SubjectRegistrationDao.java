@@ -15,5 +15,12 @@ public interface SubjectRegistrationDao {
 
     List<SubjectRegistration> findByStudentAndYear(int studentId, int academicYear) throws DaoException;
 
+    /**
+     * Students taking a subject in a period of a year, excluding the withdrawn ones. A registration
+     * without section (null) matches every section, because its group is unknown.
+     */
+    List<SubjectRegistration> findBySubjectYearPeriodAndSection(int subjectId, int academicYear,
+                                                                AcademicPeriod period, String section) throws DaoException;
+
     void updateStatus(int registrationId, RegistrationStatus status) throws DaoException;
 }

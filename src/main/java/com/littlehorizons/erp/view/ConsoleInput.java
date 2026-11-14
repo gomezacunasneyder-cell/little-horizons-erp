@@ -6,6 +6,7 @@ import com.littlehorizons.erp.exception.ValidationException;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Scanner;
@@ -127,6 +128,17 @@ public final class ConsoleInput {
                 throw new ValidationException(ruleMessage);
             }
             return date;
+        });
+    }
+
+    /** Reads a time as HH:mm (24 hours), for example 07:30. */
+    public LocalTime readTime(String prompt) {
+        return read(prompt, text -> {
+            try {
+                return LocalTime.parse(text);
+            } catch (DateTimeParseException e) {
+                throw new ValidationException("Hora inválida. Use el formato HH:mm (ejemplo: 07:30).");
+            }
         });
     }
 

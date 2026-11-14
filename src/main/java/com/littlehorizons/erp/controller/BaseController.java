@@ -1,5 +1,6 @@
 package com.littlehorizons.erp.controller;
 
+import com.littlehorizons.erp.exception.ConfigurationException;
 import com.littlehorizons.erp.exception.DaoException;
 import com.littlehorizons.erp.exception.ValidationException;
 import com.littlehorizons.erp.util.ErrorLogger;
@@ -28,7 +29,7 @@ abstract class BaseController {
             return operation.run();
         } catch (ValidationException e) {
             return Result.fail(e.getMessage());
-        } catch (DaoException e) {
+        } catch (DaoException | ConfigurationException e) {
             logger.error(action + " failed: " + e.getMessage(), e);
             return Result.fail(e.getMessage());
         }

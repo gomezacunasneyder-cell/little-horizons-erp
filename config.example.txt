@@ -11,3 +11,8 @@ db.password=your_password
 # grading.final.strategy=simple
 # grading.final.strategy=weighted
 # grading.final.weights=20,20,30,30
+
+# --- Optional: attendance report (module 1.4) ---
+# A student is reported when he or she has MORE than this number of unexcused absences ("Ausente")
+# in the same week. If the key is missing the program uses 3.
+# attendance.weekly.absence.limit=3

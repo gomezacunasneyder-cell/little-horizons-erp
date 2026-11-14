@@ -20,6 +20,9 @@ public abstract class Person {
     private static final Pattern NUMERIC_DOCUMENT_PATTERN = Pattern.compile("[0-9]{5,15}");
     private static final Pattern PASSPORT_PATTERN = Pattern.compile("[A-Za-z0-9]{5,20}");
     public static final Pattern NAME_PATTERN = Pattern.compile("\\p{L}+(?:[ '\\-]\\p{L}+)*");
+    /** Free descriptive text that must be words (specialization, occupation, relationship). */
+    public static final Pattern LABEL_PATTERN = Pattern.compile("\\p{L}[\\p{L} '.,/\\-]*");
+    public static final String LABEL_MESSAGE = "Use solo letras (se permiten espacios, punto, coma, guion y barra).";
     public static final Pattern PHONE_PATTERN = Pattern.compile("\\+?[0-9]{7,15}");
     public static final Pattern EMAIL_PATTERN = Pattern.compile("[\\w.+\\-]+@[\\w\\-]+(\\.[\\w\\-]+)+");
 
@@ -88,6 +91,22 @@ public abstract class Person {
             throw new ValidationException(fieldName + ": máximo " + maxLength + " caracteres.");
         }
         return value.trim();
+    }
+
+    /** Text made of letters only (see LABEL_PATTERN) with a maximum length; blank returns null. */
+    public static String optionalLabel(String value, int maxLength, String fieldName) {
+        String text = optionalText(value, maxLength, fieldName);
+        if (text != null && !LABEL_PATTERN.matcher(text).matches()) {
+            throw new ValidationException(fieldName + ": " + LABEL_MESSAGE);
+        }
+        return text;
+    }
+
+    public static String requireLabel(String value, int maxLength, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new ValidationException(fieldName + " es obligatorio.");
+        }
+        return optionalLabel(value, maxLength, fieldName);
     }
 
     protected static String requireText(String value, int maxLength, String fieldName) {

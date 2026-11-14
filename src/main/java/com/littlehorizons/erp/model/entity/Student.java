@@ -98,7 +98,7 @@ public class Student extends Person {
     }
 
     public void setAllergies(String allergies) {
-        this.allergies = optionalText(allergies, TEXT_MAX, "Alergias");
+        this.allergies = optionalLabel(allergies, TEXT_MAX, "Alergias");
     }
 
     public String getMedicalConditions() {
@@ -106,7 +106,7 @@ public class Student extends Person {
     }
 
     public void setMedicalConditions(String medicalConditions) {
-        this.medicalConditions = optionalText(medicalConditions, TEXT_MAX, "Condiciones médicas");
+        this.medicalConditions = optionalLabel(medicalConditions, TEXT_MAX, "Condiciones médicas");
     }
 
     public LocalDate getAdmissionDate() {

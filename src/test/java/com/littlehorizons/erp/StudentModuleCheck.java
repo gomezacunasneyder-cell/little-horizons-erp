@@ -64,6 +64,27 @@ public final class StudentModuleCheck {
                     baseBuilder("99900000001", "Ana").birthDate(LocalDate.now().plusDays(1)).build()));
             check("Guardian with TI document is rejected", () -> throwsValidation(() ->
                     new Guardian(DocumentType.TI, "99910000001", "Luis", "Pérez", "Padre", "3001234567")));
+            check("Guardian occupation and relationship must be letters", () -> {
+                Guardian g = new Guardian(DocumentType.CC, "99910000001", "Luis", "Pérez", "Padre", "3001234567");
+                return throwsValidation(() -> g.setOccupation("372498632984"))
+                        && throwsValidation(() -> g.setRelationship("123"))
+                        && throwsValidation(() -> new Guardian(DocumentType.CC, "99910000001", "Luis", "Pérez", "T1o", "3001234567"));
+            });
+            check("Relationship must be one of the allowed options", () -> {
+                Guardian g = new Guardian(DocumentType.CC, "99910000001", "Luis", "Pérez", "padre", "3001234567");
+                return "Padre".equals(g.getRelationship())
+                        && throwsValidation(() -> g.setRelationship("Vecino"))
+                        && throwsValidation(() -> g.setRelationship("Tutor"));
+            });
+            check("Allergies and medical conditions must be letters", () ->
+                    throwsValidation(() -> baseBuilder("99900000001", "Ana").allergies("3254325435").build())
+                    && throwsValidation(() -> baseBuilder("99900000001", "Ana").medicalConditions("3432432432").build())
+                    && "Polen".equals(baseBuilder("99900000001", "Ana").allergies("Polen").build().getAllergies()));
+            check("Guardian occupation accepts words with accents", () -> {
+                Guardian g = new Guardian(DocumentType.CC, "99910000001", "Luis", "Pérez", "Tío", "3001234567");
+                g.setOccupation("Ingeniero/a de sistemas");
+                return "Ingeniero/a de sistemas".equals(g.getOccupation());
+            });
             check("Guardian without a valid phone is rejected", () -> throwsValidation(() ->
                     new Guardian(DocumentType.CC, "99910000001", "Luis", "Pérez", "Padre", "abc")));
 
@@ -74,7 +95,7 @@ public final class StudentModuleCheck {
             check("Register a student with one guardian", () -> registered.isSuccess() && ana.getId() != null && mother.getId() != null);
             check("Register without guardians fails", () -> !students.register(student("99900000002", "Sin"), new ArrayList<>()).isSuccess());
             check("Duplicate document fails with a message", () ->
-                    !students.register(student("99900000001", "Otra"), new ArrayList<>(List.of(new StudentGuardian(guardian("99910000009", "X", "Tía"), true, true)))).isSuccess());
+                    !students.register(student("99900000001", "Otra"), new ArrayList<>(List.of(new StudentGuardian(guardian("99910000009", "X", "Abuelo"), true, true)))).isSuccess());
             check("The failed registration saved nothing (rollback)", () ->
                     !students.findGuardian("99910000009").getData().isPresent());
 

@@ -26,6 +26,14 @@ final class StudentForm {
         this.controller = controller;
     }
 
+    /** Yes/no question first; the description (letters only) is asked only when the answer is yes. */
+    private String readDetailIfYes(String question, String detailPrompt) {
+        if (!input.readYesNo(question)) {
+            return null;
+        }
+        return input.read(detailPrompt, text -> Person.requireLabel(text, 2000, "El dato"));
+    }
+
     Student readNewStudent() {
         DocumentType type = input.readOption("Tipo de documento: ", List.of(DocumentType.values()), DocumentType::getDisplayName);
         String document = input.read("Número de documento: ", text -> {
@@ -60,8 +68,8 @@ final class StudentForm {
                 .phone(input.readOptionalMatching("Teléfono (Enter para omitir): ", Person.PHONE_PATTERN, Person.PHONE_MESSAGE))
                 .email(input.readOptionalMatching("Correo (Enter para omitir): ", Person.EMAIL_PATTERN, Person.EMAIL_MESSAGE))
                 .bloodType(input.readOptionalMatching("Tipo de sangre, ej. O+ (Enter para omitir): ", BLOOD_TYPE, BLOOD_TYPE_MESSAGE))
-                .allergies(input.readOptionalText("Alergias (Enter para omitir): ", 2000))
-                .medicalConditions(input.readOptionalText("Condiciones médicas (Enter para omitir): ", 2000))
+                .allergies(readDetailIfYes("¿Tiene alergias?", "Describa las alergias (solo letras): "))
+                .medicalConditions(readDetailIfYes("¿Tiene condiciones médicas?", "Describa las condiciones médicas (solo letras): "))
                 .build();
     }
 
@@ -75,8 +83,8 @@ final class StudentForm {
         student.setEmail(editMatching("Correo", student.getEmail(), false, Person.EMAIL_PATTERN, Person.EMAIL_MESSAGE));
         student.setAddress(editMatching("Dirección", student.getAddress(), false, Pattern.compile(".{1,255}"), "Máximo 255 caracteres."));
         student.setBloodType(editMatching("Tipo de sangre", student.getBloodType(), false, BLOOD_TYPE, BLOOD_TYPE_MESSAGE));
-        student.setAllergies(editMatching("Alergias", student.getAllergies(), false, Pattern.compile(".{1,2000}"), "Máximo 2000 caracteres."));
-        student.setMedicalConditions(editMatching("Condiciones médicas", student.getMedicalConditions(), false, Pattern.compile(".{1,2000}"), "Máximo 2000 caracteres."));
+        student.setAllergies(editMatching("Alergias", student.getAllergies(), false, Person.LABEL_PATTERN, Person.LABEL_MESSAGE));
+        student.setMedicalConditions(editMatching("Condiciones médicas", student.getMedicalConditions(), false, Person.LABEL_PATTERN, Person.LABEL_MESSAGE));
         if (input.readYesNo("¿Cambiar el estado (actual: " + student.getStatus().getDisplayName() + ")?")) {
             student.setStatus(input.readOption("Nuevo estado: ",
                     List.of(StudentStatus.ACTIVE, StudentStatus.SUSPENDED, StudentStatus.GRADUATED),

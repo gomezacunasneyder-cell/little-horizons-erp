@@ -22,6 +22,8 @@ final class GuardianForm {
             List.of(DocumentType.CC, DocumentType.CE, DocumentType.PASSPORT);
 
     private final ConsoleInput input;
+    private static final java.util.regex.Pattern RELATIONSHIP_CHOICE = java.util.regex.Pattern.compile(
+            "(?i)" + String.join("|", Guardian.RELATIONSHIPS));
     private final ConsoleOutput output;
     private final StudentController controller;
 
@@ -73,7 +75,7 @@ final class GuardianForm {
         String middleName = input.readOptionalMatching("Segundo nombre (Enter para omitir): ", Person.NAME_PATTERN, Person.NAME_MESSAGE);
         String lastName = input.readMatching("Primer apellido: ", Person.NAME_PATTERN, Person.NAME_MESSAGE);
         String secondLastName = input.readOptionalMatching("Segundo apellido (Enter para omitir): ", Person.NAME_PATTERN, Person.NAME_MESSAGE);
-        String relationship = input.readRequiredText("Parentesco (Padre, Madre, Abuelo, Tío, Tutor legal...): ", 50);
+        String relationship = input.readOption("Parentesco: ", Guardian.RELATIONSHIPS, option -> option);
         String phone = input.readMatching("Teléfono principal: ", Person.PHONE_PATTERN, Person.PHONE_MESSAGE);
 
         Guardian guardian = new Guardian(type, document, firstName, lastName, relationship, phone);
@@ -82,19 +84,19 @@ final class GuardianForm {
         guardian.setSecondaryPhone(input.readOptionalMatching("Teléfono secundario (Enter para omitir): ", Person.PHONE_PATTERN, Person.PHONE_MESSAGE));
         guardian.setEmail(input.readOptionalMatching("Correo (Enter para omitir): ", Person.EMAIL_PATTERN, Person.EMAIL_MESSAGE));
         guardian.setAddress(input.readOptionalText("Dirección (Enter para omitir): ", 255));
-        guardian.setOccupation(input.readOptionalText("Ocupación (Enter para omitir): ", 100));
+        guardian.setOccupation(input.read("Ocupación (Enter para omitir): ", text -> Person.optionalLabel(text, 100, "La ocupación")));
         guardian.setFinanciallyResponsible(input.readYesNo("¿Es responsable de los pagos?"));
         return guardian;
     }
 
     /** Edits the editable data of an existing guardian; Enter keeps the current value. */
     void edit(Guardian guardian) {
-        guardian.setRelationship(editText("Parentesco", guardian.getRelationship(), true, 50));
+        guardian.setRelationship(editMatching("Parentesco (" + String.join("/", Guardian.RELATIONSHIPS) + ")", guardian.getRelationship(), true, RELATIONSHIP_CHOICE, Guardian.RELATIONSHIP_MESSAGE));
         guardian.setPhone(editMatching("Teléfono principal", guardian.getPhone(), true, Person.PHONE_PATTERN, Person.PHONE_MESSAGE));
         guardian.setSecondaryPhone(editMatching("Teléfono secundario", guardian.getSecondaryPhone(), false, Person.PHONE_PATTERN, Person.PHONE_MESSAGE));
         guardian.setEmail(editMatching("Correo", guardian.getEmail(), false, Person.EMAIL_PATTERN, Person.EMAIL_MESSAGE));
         guardian.setAddress(editText("Dirección", guardian.getAddress(), false, 255));
-        guardian.setOccupation(editText("Ocupación", guardian.getOccupation(), false, 100));
+        guardian.setOccupation(editMatching("Ocupación", guardian.getOccupation(), false, Person.LABEL_PATTERN, Person.LABEL_MESSAGE));
     }
 
     private String editText(String label, String current, boolean required, int maxLength) {

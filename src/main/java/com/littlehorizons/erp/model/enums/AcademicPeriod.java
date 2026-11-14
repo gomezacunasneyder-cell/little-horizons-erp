@@ -32,6 +32,19 @@ public enum AcademicPeriod implements DbEnum {
         return java.util.List.of(FIRST, SECOND, THIRD, FOURTH);
     }
 
+    /**
+     * The period a school day belongs to: the school year is split in four quarters (January to
+     * March is I, April to June is II, July to September is III and October to December is IV).
+     */
+    public static AcademicPeriod ofDate(java.time.LocalDate date) {
+        return switch ((date.getMonthValue() - 1) / 3) {
+            case 0 -> FIRST;
+            case 1 -> SECOND;
+            case 2 -> THIRD;
+            default -> FOURTH;
+        };
+    }
+
     public static AcademicPeriod fromDbLabel(String label) {
         return DbEnumLookup.fromDbLabel(AcademicPeriod.class, label);
     }

@@ -18,4 +18,10 @@ public interface DaoFactory {
     SubjectDao subjectDao();
 
     SubjectRegistrationDao subjectRegistrationDao();
+
+    TeacherDao teacherDao();
+
+    TeachingAssignmentDao teachingAssignmentDao();
+
+    ScheduleDao scheduleDao();
 }

@@ -40,4 +40,19 @@ public final class JdbcDaoFactory implements DaoFactory {
     public SubjectRegistrationDao subjectRegistrationDao() {
         return new JdbcSubjectRegistrationDao(database);
     }
+
+    @Override
+    public TeacherDao teacherDao() {
+        return new JdbcTeacherDao(database);
+    }
+
+    @Override
+    public TeachingAssignmentDao teachingAssignmentDao() {
+        return new JdbcTeachingAssignmentDao(database);
+    }
+
+    @Override
+    public ScheduleDao scheduleDao() {
+        return new JdbcScheduleDao(database);
+    }
 }

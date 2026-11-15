@@ -21,6 +21,17 @@ public class JdbcTeacherDao implements TeacherDao {
             + "p.segundo_nombre, p.primer_apellido, p.segundo_apellido, p.correo_electronico, p.telefono, "
             + "p.especializacion, p.fecha_contratacion, p.estado";
 
+    /**
+     * The same columns with a prefix in their names (p.estado AS t_estado). Needed when the query also
+     * has the columns of a student: both tables have tipo_documento, numero_documento, estado... and
+     * reading a column by name would return the student's value instead of the teacher's.
+     */
+    static String teacherColumnsPrefixed(String prefix) {
+        return java.util.stream.Stream.of(TEACHER_COLUMNS.split(", "))
+                .map(column -> column + " AS " + prefix + column.substring(2))
+                .collect(java.util.stream.Collectors.joining(", "));
+    }
+
     private static final String SELECT = "SELECT " + TEACHER_COLUMNS + " FROM profesores p";
     private static final String ORDER = " ORDER BY p.primer_apellido, p.segundo_apellido, p.primer_nombre";
 

@@ -28,4 +28,8 @@ public interface DaoFactory {
     AcademicRecordDao academicRecordDao();
 
     AttendanceDao attendanceDao();
+
+    ClubDao clubDao();
+
+    ClubMembershipDao clubMembershipDao();
 }

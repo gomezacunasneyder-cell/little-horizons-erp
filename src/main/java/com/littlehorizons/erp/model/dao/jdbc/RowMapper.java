@@ -96,19 +96,24 @@ final class RowMapper {
     }
 
     static Teacher teacher(ResultSet rs) throws SQLException {
+        return teacher(rs, "");
+    }
+
+    /** Reads the teacher from columns whose names start with the prefix (see JdbcTeacherDao.teacherColumnsPrefixed). */
+    static Teacher teacher(ResultSet rs, String prefix) throws SQLException {
         Teacher teacher = new Teacher(
-                DbEnumLookup.fromDbLabel(DocumentType.class, rs.getString("tipo_documento")),
-                rs.getString("numero_documento"),
-                rs.getString("primer_nombre"),
-                rs.getString("primer_apellido"),
-                rs.getString("correo_electronico"),
-                rs.getString("especializacion"),
-                date(rs, "fecha_contratacion"));
-        teacher.setId(rs.getInt("id_profesor"));
-        teacher.setMiddleName(rs.getString("segundo_nombre"));
-        teacher.setSecondLastName(rs.getString("segundo_apellido"));
-        teacher.setPhone(rs.getString("telefono"));
-        teacher.setStatus(DbEnumLookup.fromDbLabel(TeacherStatus.class, rs.getString("estado")));
+                DbEnumLookup.fromDbLabel(DocumentType.class, rs.getString(prefix + "tipo_documento")),
+                rs.getString(prefix + "numero_documento"),
+                rs.getString(prefix + "primer_nombre"),
+                rs.getString(prefix + "primer_apellido"),
+                rs.getString(prefix + "correo_electronico"),
+                rs.getString(prefix + "especializacion"),
+                date(rs, prefix + "fecha_contratacion"));
+        teacher.setId(rs.getInt(prefix + "id_profesor"));
+        teacher.setMiddleName(rs.getString(prefix + "segundo_nombre"));
+        teacher.setSecondLastName(rs.getString(prefix + "segundo_apellido"));
+        teacher.setPhone(rs.getString(prefix + "telefono"));
+        teacher.setStatus(DbEnumLookup.fromDbLabel(TeacherStatus.class, rs.getString(prefix + "estado")));
         return teacher;
     }
 
@@ -154,6 +159,31 @@ final class RowMapper {
         record.setId(rs.getInt("id_asistencia"));
         record.setObservations(rs.getString("observaciones"));
         return record;
+    }
+
+    /** Needs the columns of clubes (alias c) and of profesores (alias p, the teacher in charge). */
+    static Club club(ResultSet rs) throws SQLException {
+        return club(rs, "");
+    }
+
+    /** The teacher columns of the query have this prefix (empty when the query has no student columns). */
+    static Club club(ResultSet rs, String teacherPrefix) throws SQLException {
+        Club club = new Club(rs.getString("nombre_club"), rs.getString("descripcion"), teacher(rs, teacherPrefix),
+                rs.getInt("capacidad_maxima"), rs.getString("horario_reunion"));
+        club.setId(rs.getInt("id_club"));
+        club.setActive(rs.getBoolean("esta_activo"));
+        return club;
+    }
+
+    /** Needs the student columns, the club columns, the teacher columns with prefix t_ and the ones of membresias_club (alias m;
+     * its joining date is selected as fecha_ingreso_club because the student also has a fecha_ingreso). */
+    static ClubMembership membership(ResultSet rs) throws SQLException {
+        ClubMembership membership = new ClubMembership(student(rs), club(rs, JdbcClubMembershipDao.TEACHER_PREFIX), date(rs, "fecha_ingreso_club"));
+        membership.setId(rs.getInt("id_membresia"));
+        if (MembershipStatus.fromDbLabel(rs.getString("estado_membresia")) == MembershipStatus.WITHDRAWN) {
+            membership.withdraw(date(rs, "fecha_retiro"), rs.getString("motivo_retiro"));
+        }
+        return membership;
     }
 
     private static LocalTime time(ResultSet rs, String column) throws SQLException {

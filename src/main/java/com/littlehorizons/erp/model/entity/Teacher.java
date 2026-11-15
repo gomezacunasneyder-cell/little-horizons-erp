@@ -65,6 +65,11 @@ public class Teacher extends Person {
         this.hireDate = hireDate;
     }
 
+    /** True when the teacher currently works at the school (not inactive and not on leave). */
+    public boolean isActive() {
+        return status == TeacherStatus.ACTIVE;
+    }
+
     public TeacherStatus getStatus() {
         return status;
     }

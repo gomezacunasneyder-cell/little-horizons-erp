@@ -9,10 +9,12 @@ import com.littlehorizons.erp.controller.ClubMembershipController;
 import com.littlehorizons.erp.controller.EventController;
 import com.littlehorizons.erp.controller.EventParticipationController;
 import com.littlehorizons.erp.controller.PaymentConceptController;
+import com.littlehorizons.erp.controller.PaymentController;
 import com.littlehorizons.erp.controller.StudentPriceController;
 import com.littlehorizons.erp.controller.EnrollmentController;
 import com.littlehorizons.erp.controller.GradeController;
 import com.littlehorizons.erp.controller.GradeReportController;
+import com.littlehorizons.erp.controller.DebtorController;
 import com.littlehorizons.erp.controller.GuardianController;
 import com.littlehorizons.erp.controller.ScheduleController;
 import com.littlehorizons.erp.controller.StartupController;
@@ -30,6 +32,8 @@ import com.littlehorizons.erp.view.AcademicMenuView;
 import com.littlehorizons.erp.view.AttendanceMenuView;
 import com.littlehorizons.erp.view.ClubMenuView;
 import com.littlehorizons.erp.view.ConceptMenuView;
+import com.littlehorizons.erp.view.FinancialMenuView;
+import com.littlehorizons.erp.view.PaymentMenuView;
 import com.littlehorizons.erp.view.EventMenuView;
 import com.littlehorizons.erp.view.ExtracurricularMenuView;
 import com.littlehorizons.erp.view.AssignmentMenuView;
@@ -113,7 +117,13 @@ public final class Main {
                 new ClubMenuView(input, output, clubs, clubMemberships, teachers, students),
                 new EventMenuView(input, output, events, eventParticipations, teachers, students));
 
-        MenuView financeModule = new ConceptMenuView(input, output, paymentConcepts, studentPrices, students);
+        PaymentController payments = new PaymentController(daos.paymentDao(), daos.paymentConceptDao(),
+                daos.studentConceptPriceDao(), daos.enrollmentDao(), daos.studentDao(), logger);
+        DebtorController debtors = new DebtorController(daos.enrollmentDao(), daos.paymentConceptDao(),
+                daos.studentConceptPriceDao(), daos.paymentDao(), daos.studentDao(), logger);
+        MenuView financeModule = new FinancialMenuView(input, output,
+                new ConceptMenuView(input, output, paymentConcepts, studentPrices, students),
+                new PaymentMenuView(input, output, payments, debtors, guardians, paymentConcepts, students));
 
         new MainMenuView(input, output, startup,
                 Map.of(1, studentModule, 2, academicModule, 3, teacherModule, 4, extracurricularModule, 5, financeModule)).start();

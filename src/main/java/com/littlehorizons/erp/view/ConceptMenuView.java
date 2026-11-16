@@ -13,7 +13,6 @@ import com.littlehorizons.erp.util.Money;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.function.Function;
 
 /**
  * "Gestión Financiera - Conceptos de pago": the catalog of what the school charges and the
@@ -34,8 +33,8 @@ public final class ConceptMenuView extends AbstractMenuView {
 
     private final PaymentConceptController concepts;
     private final StudentPriceController prices;
-    private final EntitySelector<PaymentConcept> conceptSelector;
-    private final EntitySelector<PaymentConcept> activeConceptSelector;
+    private final ConceptSelector conceptSelector;
+    private final ConceptSelector activeConceptSelector;
     private final StudentSelector studentSelector;
     private final ConceptForm form;
     private final ConceptPrinter conceptPrinter;
@@ -46,19 +45,12 @@ public final class ConceptMenuView extends AbstractMenuView {
         super(input, output);
         this.concepts = concepts;
         this.prices = prices;
-        this.conceptSelector = conceptSelector(input, output, concepts::search);
-        this.activeConceptSelector = conceptSelector(input, output, concepts::searchActive);
+        this.conceptSelector = new ConceptSelector(input, output, concepts::search);
+        this.activeConceptSelector = new ConceptSelector(input, output, concepts::searchActive);
         this.studentSelector = new StudentSelector(input, output, students);
         this.form = new ConceptForm(input, concepts);
         this.conceptPrinter = new ConceptPrinter(output);
         this.printer = new ResultPrinter(output);
-    }
-
-    private static EntitySelector<PaymentConcept> conceptSelector(ConsoleInput input, ConsoleOutput output,
-                                                                  Function<String, Result<List<PaymentConcept>>> search) {
-        return new EntitySelector<>(input, output, "Código o nombre del concepto: ", search,
-                c -> c.getCode() + " - " + c.getName() + " (" + Money.format(c.getBaseAmount()) + ")"
-                        + (c.isActive() ? "" : " [inactivo]"));
     }
 
     @Override

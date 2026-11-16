@@ -32,4 +32,8 @@ public interface DaoFactory {
     ClubDao clubDao();
 
     ClubMembershipDao clubMembershipDao();
+
+    EventDao eventDao();
+
+    EventParticipationDao eventParticipationDao();
 }

@@ -186,6 +186,28 @@ final class RowMapper {
         return membership;
     }
 
+    /** Needs the columns of eventos (alias ev) and the organizer's columns with the given prefix (see JdbcTeacherDao.teacherColumnsPrefixed). */
+    static SchoolEvent event(ResultSet rs, String teacherPrefix) throws SQLException {
+        SchoolEvent event = new SchoolEvent(rs.getString("nombre_evento"), rs.getString("descripcion"),
+                EventType.fromDbLabel(rs.getString("tipo_evento")), date(rs, "fecha_evento"), rs.getString("lugar"),
+                rs.getBoolean("tiene_competencia"), teacher(rs, teacherPrefix));
+        event.setId(rs.getInt("id_evento"));
+        event.setActive(rs.getBoolean("esta_activo"));
+        return event;
+    }
+
+    /** Needs the student columns, the event columns, the organizer with prefix t_ and posicion_obtenida / id_participacion. */
+    static EventParticipation participation(ResultSet rs) throws SQLException {
+        EventParticipation participation = new EventParticipation(
+                event(rs, JdbcEventParticipationDao.TEACHER_PREFIX), student(rs));
+        participation.setId(rs.getInt("id_participacion"));
+        String position = rs.getString("posicion_obtenida");
+        if (position != null) {
+            participation.assignPosition(EventPosition.fromDbLabel(position));
+        }
+        return participation;
+    }
+
     private static LocalTime time(ResultSet rs, String column) throws SQLException {
         Time value = rs.getTime(column);
         return value.toLocalTime();

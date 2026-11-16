@@ -75,4 +75,14 @@ public final class JdbcDaoFactory implements DaoFactory {
     public ClubMembershipDao clubMembershipDao() {
         return new JdbcClubMembershipDao(database);
     }
+
+    @Override
+    public EventDao eventDao() {
+        return new JdbcEventDao(database);
+    }
+
+    @Override
+    public EventParticipationDao eventParticipationDao() {
+        return new JdbcEventParticipationDao(database);
+    }
 }

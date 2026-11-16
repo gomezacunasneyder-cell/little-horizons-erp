@@ -208,6 +208,22 @@ final class RowMapper {
         return participation;
     }
 
+    /** Needs the columns listed in JdbcPaymentConceptDao.CONCEPT_COLUMNS. */
+    static PaymentConcept concept(ResultSet rs) throws SQLException {
+        PaymentConcept concept = new PaymentConcept(rs.getString("codigo_concepto"), rs.getString("nombre_concepto"),
+                rs.getString("descripcion"), rs.getBigDecimal("monto_base"), rs.getInt("porcentaje_iva"),
+                rs.getBoolean("es_recurrente"));
+        concept.setId(rs.getInt("id_concepto"));
+        concept.setActive(rs.getBoolean("esta_activo"));
+        return concept;
+    }
+
+    /** Needs the concept columns plus anio_academico, monto_ajustado and motivo; the student is already known. */
+    static StudentConceptPrice studentPrice(ResultSet rs, Student student) throws SQLException {
+        return new StudentConceptPrice(student, concept(rs), rs.getInt("anio_academico"),
+                rs.getBigDecimal("monto_ajustado"), rs.getString("motivo"));
+    }
+
     private static LocalTime time(ResultSet rs, String column) throws SQLException {
         Time value = rs.getTime(column);
         return value.toLocalTime();

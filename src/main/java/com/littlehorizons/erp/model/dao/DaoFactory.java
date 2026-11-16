@@ -36,4 +36,8 @@ public interface DaoFactory {
     EventDao eventDao();
 
     EventParticipationDao eventParticipationDao();
+
+    PaymentConceptDao paymentConceptDao();
+
+    StudentConceptPriceDao studentConceptPriceDao();
 }

@@ -33,6 +33,10 @@
 --            solo existe en eventos con competencia (una CHECK no puede mirar otra tabla, asi que esa regla la
 --            aplican EventParticipation y los DAO en Java). Se elimino el rol de participacion (era
 --            redundante con la posicion) y las observaciones, que ninguna pantalla usa.
+-- [CAMBIO 8] Conceptos de pago (modulo 3.1): el nombre del concepto no se repite, cada concepto lleva
+--            el porcentaje de IVA que se discrimina en la factura (0 en servicios educativos), y el
+--            motivo de un valor personalizado (descuento por hermanos, beca) es obligatorio. Los 7 conceptos
+--            de ejemplo que traia este script se reemplazaron por los 12 de la seccion DML de finanzas.
 --
 -- ADVERTENCIA: la primera sentencia ELIMINA la base erp_little_horizons si existe.
 -- Ejecutar este archivo completo borra todos los datos y los vuelve a crear.
@@ -356,14 +360,16 @@ CREATE TABLE participantes_evento (
 CREATE TABLE conceptos_pago (
     id_concepto INT AUTO_INCREMENT PRIMARY KEY,
     codigo_concepto VARCHAR(20) NOT NULL UNIQUE,
-    nombre_concepto VARCHAR(100) NOT NULL,
+    nombre_concepto VARCHAR(100) NOT NULL UNIQUE, -- [CAMBIO 8] un nombre no se repite en el catálogo
     descripcion TEXT,
     monto_base DECIMAL(10,2) NOT NULL COMMENT 'Valor base del concepto en pesos colombianos',
+    porcentaje_iva TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'IVA que se discrimina en la factura (0 a 100)', -- [CAMBIO 8]
     es_recurrente BOOLEAN DEFAULT FALSE COMMENT 'Indica si es un pago recurrente (ej: pensión mensual)',
     esta_activo BOOLEAN DEFAULT TRUE,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CHECK (monto_base > 0), -- [CAMBIO 5]
+    CHECK (porcentaje_iva <= 100), -- [CAMBIO 8]
     INDEX idx_activo (esta_activo),
     INDEX idx_codigo (codigo_concepto)
 ) ENGINE=InnoDB COMMENT='Catálogo de conceptos de pago del colegio';
@@ -375,8 +381,8 @@ CREATE TABLE valores_concepto_estudiante (
     id_estudiante INT NOT NULL,
     id_concepto INT NOT NULL,
     anio_academico INT NOT NULL,
-    monto_ajustado DECIMAL(10,2) NOT NULL COMMENT 'Valor que paga este estudiante por el concepto',
-    motivo VARCHAR(150) COMMENT 'Ej: descuento por hermanos, beca parcial',
+    monto_ajustado DECIMAL(10,2) NOT NULL COMMENT 'Valor que paga este estudiante por el concepto (0 = beca total)',
+    motivo VARCHAR(150) NOT NULL COMMENT 'Ej: descuento por hermanos, beca parcial', -- [CAMBIO 8] obligatorio
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_estudiante) ON DELETE CASCADE,
     FOREIGN KEY (id_concepto) REFERENCES conceptos_pago(id_concepto),
@@ -527,16 +533,6 @@ INSERT INTO categorias_recurso (nombre_categoria, descripcion) VALUES
 ('Equipo Deportivo', 'Equipos y materiales deportivos (balones, conos, etc.)'),
 ('Dispositivo Tecnológico', 'Tablets, calculadoras científicas, computadores portátiles'),
 ('Material Didáctico', 'Materiales educativos diversos (mapas, modelos, etc.)');
-
--- Insertar conceptos de pago comunes
-INSERT INTO conceptos_pago (codigo_concepto, nombre_concepto, descripcion, monto_base, es_recurrente) VALUES
-('MAT', 'Matrícula', 'Pago anual de matrícula', 500000.00, FALSE),
-('PENSION', 'Pensión Mensual', 'Pago mensual de pensión', 350000.00, TRUE),
-('UNIFORME', 'Uniforme', 'Uniforme escolar completo', 250000.00, FALSE),
-('TRANSPORTE', 'Transporte Escolar', 'Servicio de transporte mensual', 150000.00, TRUE),
-('ALIMENTACION', 'Servicio de Alimentación', 'Almuerzo escolar mensual', 120000.00, TRUE),
-('ACTIVIDAD', 'Actividad Especial', 'Salida pedagógica o actividad especial', 50000.00, FALSE),
-('CERTIFICADO', 'Certificado', 'Certificado de estudio o constancia', 15000.00, FALSE);
 
 -- =====================================================================
 -- DML - Modulo de estudiantes y matricula (datos de prueba ficticios)
@@ -6153,6 +6149,56 @@ INSERT INTO participantes_evento (id_evento, id_estudiante, posicion_obtenida) V
 (21, 29, 'Participante'),
 (21, 32, 'Participante'),
 (21, 38, 'Participante');
+
+-- =====================================================================
+-- DML - Modulo financiero 3.1: conceptos de pago y valores personalizados (datos de prueba ficticios)
+-- 12 conceptos (11 activos y 1 inactivo) con valores en pesos colombianos. Los servicios educativos llevan IVA 0 y
+-- los uniformes, utiles y carnes IVA 19. Los id_concepto salen del orden de insercion de esta sentencia
+-- (1 = Matricula anual, 2 = Pension mensual, ...).
+-- Valores personalizados: descuento por hermanos del 10% (estudiantes 37 a 40, hermanos de 3, 12, 20 y 28),
+-- becas parciales, tres becas totales (estudiante 7) y apoyos del fondo solidario. Un valor personalizado nunca
+-- supera el valor base del concepto.
+-- =====================================================================
+
+INSERT INTO conceptos_pago (codigo_concepto, nombre_concepto, descripcion, monto_base, porcentaje_iva, es_recurrente, esta_activo) VALUES
+('MATRICULA_ANUAL', 'Matrícula anual', 'Derecho de matrícula del año escolar para todos los grados.', 1200000.00, 0, 0, 1),
+('PENSION_MENSUAL', 'Pensión mensual', 'Pensión mensual del servicio educativo (diez cuotas del año escolar).', 650000.00, 0, 1, 1),
+('UNIFORME_DIARIO', 'Uniforme de diario', 'Uniforme completo de diario: camisa, pantalón o jardinera y medias.', 185000.00, 19, 0, 1),
+('UNIFORME_DEPORTE', 'Uniforme de deportes', 'Sudadera, camiseta y pantaloneta para educación física.', 160000.00, 19, 0, 1),
+('UTILES_ESCOLARES', 'Kit de útiles escolares', 'Paquete de útiles escolares del año.', 240000.00, 19, 0, 1),
+('SALIDA_PEDAGOGICA', 'Salida pedagógica', 'Transporte, entradas y refrigerio de una salida pedagógica.', 85000.00, 0, 0, 1),
+('ACTIVIDAD_ESPECIAL', 'Actividad especial', 'Cuota de eventos como la Feria de Ciencias o el Día Cultural.', 45000.00, 0, 0, 1),
+('SEGURO_ESTUDIANTIL', 'Seguro estudiantil', 'Póliza anual de accidentes para el estudiante.', 70000.00, 0, 0, 1),
+('CARNE_ESTUDIANTIL', 'Carné estudiantil', 'Expedición o reposición del carné con foto.', 20000.00, 19, 0, 1),
+('CERTIFICADO_ESTUDIO', 'Certificado de estudio', 'Certificado de estudio o de notas en papel membretado.', 15000.00, 0, 0, 1),
+('DERECHOS_GRADO', 'Derechos de grado', 'Ceremonia, diploma y acta de grado de undécimo.', 380000.00, 0, 0, 1),
+('PLATAFORMA_VIRTUAL', 'Plataforma virtual', 'Licencia de la plataforma virtual del 2025 (ya no se cobra).', 90000.00, 19, 0, 0);
+
+INSERT INTO valores_concepto_estudiante (id_estudiante, id_concepto, anio_academico, monto_ajustado, motivo) VALUES
+(37, 2, 2026, 585000.00, 'Descuento por hermanos'),
+(38, 2, 2026, 585000.00, 'Descuento por hermanos'),
+(39, 2, 2026, 585000.00, 'Descuento por hermanos'),
+(40, 2, 2026, 585000.00, 'Descuento por hermanos'),
+(37, 1, 2026, 1080000.00, 'Descuento por hermanos'),
+(39, 1, 2026, 1080000.00, 'Descuento por hermanos'),
+(5, 2, 2026, 325000.00, 'Beca parcial por rendimiento académico'),
+(9, 2, 2026, 455000.00, 'Beca parcial deportiva'),
+(14, 2, 2026, 487500.00, 'Beca parcial por convenio empresarial'),
+(21, 2, 2026, 390000.00, 'Beca parcial por mérito artístico'),
+(7, 2, 2026, 0.00, 'Beca total del programa de excelencia'),
+(7, 1, 2026, 0.00, 'Beca total del programa de excelencia'),
+(7, 5, 2026, 0.00, 'Beca total del programa de excelencia'),
+(18, 4, 2026, 128000.00, 'Descuento por convenio deportivo'),
+(18, 7, 2026, 0.00, 'Participa en la delegación deportiva del colegio'),
+(25, 6, 2026, 42500.00, 'Apoyo del fondo solidario'),
+(30, 6, 2026, 42500.00, 'Apoyo del fondo solidario'),
+(30, 3, 2026, 129500.00, 'Apoyo del fondo solidario'),
+(2, 2, 2026, 552500.00, 'Descuento por pago anticipado del año'),
+(33, 2, 2026, 520000.00, 'Hijo de empleado del colegio'),
+(16, 2, 2026, 520000.00, 'Hijo de empleado del colegio'),
+(12, 2, 2025, 558000.00, 'Descuento por hermanos'),
+(5, 2, 2025, 310000.00, 'Beca parcial por rendimiento académico'),
+(7, 2, 2025, 0.00, 'Beca total del programa de excelencia');
 
 -- ============================================
 -- VERIFICACIÓN FINAL

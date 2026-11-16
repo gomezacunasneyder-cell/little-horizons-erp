@@ -42,4 +42,6 @@ public interface DaoFactory {
     StudentConceptPriceDao studentConceptPriceDao();
 
     PaymentDao paymentDao();
+
+    InvoiceDao invoiceDao();
 }

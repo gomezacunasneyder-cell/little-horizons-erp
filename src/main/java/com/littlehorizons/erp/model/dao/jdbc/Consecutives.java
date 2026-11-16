@@ -8,7 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * Hands out consecutive numbers (receipts, and later invoices) from the table consecutivos. It
+ * Hands out consecutive numbers (receipts and invoices) from the table consecutivos. It
  * must be called INSIDE a transaction: the row is locked with SELECT ... FOR UPDATE until the
  * commit, so two payments at the same time never receive the same number, and if the payment
  * fails the rollback gives the number back (no gaps).
@@ -16,6 +16,7 @@ import java.sql.SQLException;
 final class Consecutives {
 
     static final String RECEIPT = "Recibo";
+    static final String INVOICE = "Factura";
 
     private Consecutives() {
     }

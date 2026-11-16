@@ -22,6 +22,9 @@ public interface PaymentDao {
     /** The payments of a student, newest first. */
     List<Payment> findByStudent(Student student) throws DaoException;
 
+    /** The payments of a student that are not in any invoice yet, oldest first. */
+    List<Payment> findUnbilledByStudent(Student student) throws DaoException;
+
     /** What the student already paid for that concept and year (month null = a concept without installments); zero when nothing. */
     BigDecimal paidFor(int studentId, int conceptId, int academicYear, Integer month) throws DaoException;
 

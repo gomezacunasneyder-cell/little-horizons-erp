@@ -24,7 +24,7 @@ import java.util.Map;
 
 public class JdbcPaymentDao implements PaymentDao {
 
-    private static final String SELECT = "SELECT " + JdbcPaymentConceptDao.CONCEPT_COLUMNS + ", "
+    static final String SELECT = "SELECT " + JdbcPaymentConceptDao.CONCEPT_COLUMNS + ", "
             + "p.id_pago, p.id_acudiente, p.monto_pagado, p.fecha_pago, p.metodo_pago, p.numero_recibo, "
             + "p.anio_academico, p.mes_cuota "
             + "FROM pagos p JOIN conceptos_pago cp ON cp.id_concepto = p.id_concepto ";
@@ -89,9 +89,18 @@ public class JdbcPaymentDao implements PaymentDao {
 
     @Override
     public List<Payment> findByStudent(Student student) throws DaoException {
+        return query(student, "WHERE p.id_estudiante = ? ORDER BY p.fecha_pago DESC, p.id_pago DESC");
+    }
+
+    @Override
+    public List<Payment> findUnbilledByStudent(Student student) throws DaoException {
+        return query(student, "WHERE p.id_estudiante = ? AND NOT EXISTS "
+                + "(SELECT 1 FROM detalle_factura d WHERE d.id_pago = p.id_pago) ORDER BY p.fecha_pago, p.id_pago");
+    }
+
+    private List<Payment> query(Student student, String conditionAndOrder) throws DaoException {
         try (Connection connection = database.getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     SELECT + "WHERE p.id_estudiante = ? ORDER BY p.fecha_pago DESC, p.id_pago DESC")) {
+             PreparedStatement statement = connection.prepareStatement(SELECT + conditionAndOrder)) {
             statement.setInt(1, student.getId());
             Map<Integer, Guardian> payers = new HashMap<>();
             List<Payment> payments = new ArrayList<>();

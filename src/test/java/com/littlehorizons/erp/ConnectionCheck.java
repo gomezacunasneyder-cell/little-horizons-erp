@@ -42,7 +42,7 @@ public final class ConnectionCheck {
             }
         });
 
-        check("catalog data is loaded (12 grade levels, 7 payment concepts)", () -> count("grados") == 12 && count("conceptos_pago") == 7);
+        check("catalog data is loaded (12 grade levels, 12 payment concepts)", () -> count("grados") == 12 && count("conceptos_pago") == 12);
 
         check("duplicate key is translated (1062)", () -> translated(
                 "INSERT INTO grados (nombre_grado, nivel_numerico) VALUES ('Once', 99)",

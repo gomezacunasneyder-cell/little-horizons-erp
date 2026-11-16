@@ -6,6 +6,8 @@ import com.littlehorizons.erp.controller.AttendanceReportController;
 import com.littlehorizons.erp.controller.ClassAccessPolicy;
 import com.littlehorizons.erp.controller.ClubController;
 import com.littlehorizons.erp.controller.ClubMembershipController;
+import com.littlehorizons.erp.controller.EventController;
+import com.littlehorizons.erp.controller.EventParticipationController;
 import com.littlehorizons.erp.controller.EnrollmentController;
 import com.littlehorizons.erp.controller.GradeController;
 import com.littlehorizons.erp.controller.GradeReportController;
@@ -25,6 +27,8 @@ import com.littlehorizons.erp.util.ErrorLogger;
 import com.littlehorizons.erp.view.AcademicMenuView;
 import com.littlehorizons.erp.view.AttendanceMenuView;
 import com.littlehorizons.erp.view.ClubMenuView;
+import com.littlehorizons.erp.view.EventMenuView;
+import com.littlehorizons.erp.view.ExtracurricularMenuView;
 import com.littlehorizons.erp.view.AssignmentMenuView;
 import com.littlehorizons.erp.view.ConsoleInput;
 import com.littlehorizons.erp.view.EnrollmentMenuView;
@@ -83,6 +87,9 @@ public final class Main {
         ClubController clubs = new ClubController(daos.clubDao(), logger);
         ClubMembershipController clubMemberships = new ClubMembershipController(
                 daos.clubMembershipDao(), daos.clubDao(), logger);
+        EventController events = new EventController(daos.eventDao(), logger);
+        EventParticipationController eventParticipations = new EventParticipationController(
+                daos.eventParticipationDao(), daos.eventDao(), logger);
 
         MenuView studentModule = new StudentMenuView(input, output, students, guardians,
                 new GuardianMenuView(input, output, students, guardians),
@@ -96,7 +103,9 @@ public final class Main {
                 new GradeMenuView(input, output, gradeController, gradeReports, assignments, teachers, students),
                 new AttendanceMenuView(input, output, attendance, attendanceReports, assignments, teachers, students));
 
-        MenuView extracurricularModule = new ClubMenuView(input, output, clubs, clubMemberships, teachers, students);
+        MenuView extracurricularModule = new ExtracurricularMenuView(input, output,
+                new ClubMenuView(input, output, clubs, clubMemberships, teachers, students),
+                new EventMenuView(input, output, events, eventParticipations, teachers, students));
 
         new MainMenuView(input, output, startup,
                 Map.of(1, studentModule, 2, academicModule, 3, teacherModule, 4, extracurricularModule)).start();

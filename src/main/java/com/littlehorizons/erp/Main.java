@@ -9,7 +9,10 @@ import com.littlehorizons.erp.controller.ClubMembershipController;
 import com.littlehorizons.erp.controller.EventController;
 import com.littlehorizons.erp.controller.EventParticipationController;
 import com.littlehorizons.erp.controller.PaymentConceptController;
+import com.littlehorizons.erp.controller.InvoiceController;
 import com.littlehorizons.erp.controller.PaymentController;
+import com.littlehorizons.erp.controller.finance.BillingProfile;
+import com.littlehorizons.erp.controller.finance.InvoiceFileStore;
 import com.littlehorizons.erp.controller.StudentPriceController;
 import com.littlehorizons.erp.controller.EnrollmentController;
 import com.littlehorizons.erp.controller.GradeController;
@@ -33,6 +36,7 @@ import com.littlehorizons.erp.view.AttendanceMenuView;
 import com.littlehorizons.erp.view.ClubMenuView;
 import com.littlehorizons.erp.view.ConceptMenuView;
 import com.littlehorizons.erp.view.FinancialMenuView;
+import com.littlehorizons.erp.view.InvoiceMenuView;
 import com.littlehorizons.erp.view.PaymentMenuView;
 import com.littlehorizons.erp.view.EventMenuView;
 import com.littlehorizons.erp.view.ExtracurricularMenuView;
@@ -48,6 +52,8 @@ import com.littlehorizons.erp.view.TeacherMenuView;
 import com.littlehorizons.erp.view.ConsoleOutput;
 import com.littlehorizons.erp.view.MainMenuView;
 
+import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -121,9 +127,15 @@ public final class Main {
                 daos.studentConceptPriceDao(), daos.enrollmentDao(), daos.studentDao(), logger);
         DebtorController debtors = new DebtorController(daos.enrollmentDao(), daos.paymentConceptDao(),
                 daos.studentConceptPriceDao(), daos.paymentDao(), daos.studentDao(), logger);
+        InvoiceController invoices = new InvoiceController(daos.invoiceDao(), daos.paymentDao(), daos.studentDao(),
+                () -> BillingProfile.fromConfig(AppConfig.getInstance()),
+                () -> new InvoiceFileStore(Path.of(AppConfig.getInstance()
+                        .optional("billing.invoices.dir", InvoiceFileStore.DEFAULT_DIRECTORY))),
+                LocalDateTime::now, logger);
         MenuView financeModule = new FinancialMenuView(input, output,
                 new ConceptMenuView(input, output, paymentConcepts, studentPrices, students),
-                new PaymentMenuView(input, output, payments, debtors, guardians, paymentConcepts, students));
+                new PaymentMenuView(input, output, payments, debtors, guardians, paymentConcepts, students, invoices),
+                new InvoiceMenuView(input, output, invoices, guardians, students));
 
         new MainMenuView(input, output, startup,
                 Map.of(1, studentModule, 2, academicModule, 3, teacherModule, 4, extracurricularModule, 5, financeModule)).start();

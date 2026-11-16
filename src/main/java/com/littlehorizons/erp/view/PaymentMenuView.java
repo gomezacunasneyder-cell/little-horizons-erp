@@ -2,11 +2,13 @@ package com.littlehorizons.erp.view;
 
 import com.littlehorizons.erp.controller.DebtorController;
 import com.littlehorizons.erp.controller.GuardianController;
+import com.littlehorizons.erp.controller.InvoiceController;
 import com.littlehorizons.erp.controller.PaymentConceptController;
 import com.littlehorizons.erp.controller.PaymentController;
 import com.littlehorizons.erp.controller.Result;
 import com.littlehorizons.erp.controller.StudentController;
 import com.littlehorizons.erp.controller.finance.DebtorReport;
+import com.littlehorizons.erp.controller.finance.InvoiceDocument;
 import com.littlehorizons.erp.controller.finance.PaymentBalance;
 import com.littlehorizons.erp.controller.finance.PaymentHistory;
 import com.littlehorizons.erp.model.entity.Guardian;
@@ -38,6 +40,7 @@ public final class PaymentMenuView extends AbstractMenuView {
     private final PaymentController payments;
     private final DebtorController debtors;
     private final GuardianController guardians;
+    private final InvoiceController invoices;
     private final StudentSelector studentSelector;
     private final ConceptSelector conceptSelector;
     private final PaymentForm form;
@@ -45,11 +48,13 @@ public final class PaymentMenuView extends AbstractMenuView {
     private final ResultPrinter printer;
 
     public PaymentMenuView(ConsoleInput input, ConsoleOutput output, PaymentController payments, DebtorController debtors,
-                           GuardianController guardians, PaymentConceptController concepts, StudentController students) {
+                           GuardianController guardians, PaymentConceptController concepts, StudentController students,
+                           InvoiceController invoices) {
         super(input, output);
         this.payments = payments;
         this.debtors = debtors;
         this.guardians = guardians;
+        this.invoices = invoices;
         this.studentSelector = new StudentSelector(input, output, students);
         this.conceptSelector = new ConceptSelector(input, output, concepts::searchActive);
         this.form = new PaymentForm(input);
@@ -103,6 +108,14 @@ public final class PaymentMenuView extends AbstractMenuView {
         printer.report(result);
         if (result.isSuccess()) {
             paymentPrinter.receipt(result.getData());
+            // the electronic invoice is generated automatically; if it fails the payment is already saved
+            Result<InvoiceDocument> invoice = invoices.issueForPayment(result.getData());
+            if (invoice.isSuccess()) {
+                output.success(invoice.getMessage());
+            } else {
+                output.error("El pago quedó registrado, pero no se pudo generar la factura: " + invoice.getMessage()
+                        + " Puede emitirla después en Facturas electrónicas.");
+            }
         }
     }
 

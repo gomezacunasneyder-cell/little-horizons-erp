@@ -5,7 +5,9 @@ import com.littlehorizons.erp.model.entity.PaymentConcept;
 import com.littlehorizons.erp.model.entity.Student;
 import com.littlehorizons.erp.model.entity.StudentConceptPrice;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface StudentConceptPriceDao {
@@ -20,4 +22,7 @@ public interface StudentConceptPriceDao {
 
     /** Every personalized value of the student in the year (active or inactive concepts). */
     List<StudentConceptPrice> findByStudent(Student student, int academicYear) throws DaoException;
+
+    /** Student id -> personalized value, for the students that have one for the concept in the year. */
+    Map<Integer, BigDecimal> amountsByStudent(int conceptId, int academicYear) throws DaoException;
 }

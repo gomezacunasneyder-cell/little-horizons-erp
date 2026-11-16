@@ -95,4 +95,9 @@ public final class JdbcDaoFactory implements DaoFactory {
     public StudentConceptPriceDao studentConceptPriceDao() {
         return new JdbcStudentConceptPriceDao(database);
     }
+
+    @Override
+    public PaymentDao paymentDao() {
+        return new JdbcPaymentDao(database);
+    }
 }

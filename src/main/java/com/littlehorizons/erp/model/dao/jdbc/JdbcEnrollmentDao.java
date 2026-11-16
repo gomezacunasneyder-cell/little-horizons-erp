@@ -72,6 +72,13 @@ public class JdbcEnrollmentDao implements EnrollmentDao {
     }
 
     @Override
+    public List<Enrollment> findActiveByYear(int academicYear) throws DaoException {
+        return query(SELECT + "WHERE m.anio_academico = ? AND m.estado_matricula = ? "
+                + "ORDER BY e.primer_apellido, e.segundo_apellido, e.primer_nombre",
+                academicYear, EnrollmentStatus.ACTIVE.getDbLabel());
+    }
+
+    @Override
     public void updateStatus(int enrollmentId, EnrollmentStatus status, LocalDate withdrawalDate) throws DaoException {
         String sql = "UPDATE matriculas SET estado_matricula = ?, fecha_retiro = ? WHERE id_matricula = ?";
         try (Connection connection = database.getConnection();

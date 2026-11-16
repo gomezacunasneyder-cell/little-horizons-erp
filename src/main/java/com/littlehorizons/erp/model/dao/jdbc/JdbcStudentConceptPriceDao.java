@@ -10,8 +10,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class JdbcStudentConceptPriceDao implements StudentConceptPriceDao {
@@ -70,6 +73,26 @@ public class JdbcStudentConceptPriceDao implements StudentConceptPriceDao {
     public List<StudentConceptPrice> findByStudent(Student student, int academicYear) throws DaoException {
         return query(student, SELECT + "WHERE v.id_estudiante = ? AND v.anio_academico = ? ORDER BY cp.nombre_concepto",
                 student.getId(), academicYear);
+    }
+
+    @Override
+    public Map<Integer, BigDecimal> amountsByStudent(int conceptId, int academicYear) throws DaoException {
+        String sql = "SELECT id_estudiante, monto_ajustado FROM valores_concepto_estudiante "
+                + "WHERE id_concepto = ? AND anio_academico = ?";
+        try (Connection connection = database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, conceptId);
+            statement.setInt(2, academicYear);
+            try (ResultSet rs = statement.executeQuery()) {
+                Map<Integer, BigDecimal> amounts = new HashMap<>();
+                while (rs.next()) {
+                    amounts.put(rs.getInt("id_estudiante"), rs.getBigDecimal("monto_ajustado"));
+                }
+                return amounts;
+            }
+        } catch (SQLException e) {
+            throw new DaoException(SqlErrorTranslator.toUserMessage(e), e);
+        }
     }
 
     private List<StudentConceptPrice> query(Student student, String sql, Object... parameters) throws DaoException {

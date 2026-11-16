@@ -224,6 +224,18 @@ final class RowMapper {
                 rs.getBigDecimal("monto_ajustado"), rs.getString("motivo"));
     }
 
+    /** Needs the concept columns plus the payment columns; the student and the payer are already known. */
+    static Payment payment(ResultSet rs, Student student, Guardian payer) throws SQLException {
+        int month = rs.getInt("mes_cuota");
+        Integer installmentMonth = rs.wasNull() ? null : month;
+        Payment payment = new Payment(student, concept(rs), payer, rs.getBigDecimal("monto_pagado"),
+                date(rs, "fecha_pago"), PaymentMethod.fromDbLabel(rs.getString("metodo_pago")),
+                rs.getInt("anio_academico"), installmentMonth);
+        payment.setId(rs.getInt("id_pago"));
+        payment.setReceiptNumber(rs.getString("numero_recibo"));
+        return payment;
+    }
+
     private static LocalTime time(ResultSet rs, String column) throws SQLException {
         Time value = rs.getTime(column);
         return value.toLocalTime();

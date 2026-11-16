@@ -19,5 +19,8 @@ public interface EnrollmentDao {
     /** Enrollments of a grade in a year, ordered by student name. */
     List<Enrollment> findByGradeAndYear(int gradeId, int academicYear) throws DaoException;
 
+    /** The ACTIVE enrollments of a year, ordered by student name. */
+    List<Enrollment> findActiveByYear(int academicYear) throws DaoException;
+
     void updateStatus(int enrollmentId, EnrollmentStatus status, LocalDate withdrawalDate) throws DaoException;
 }

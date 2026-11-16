@@ -58,7 +58,7 @@ public final class AppConfig {
     private static Map<String, String> load(Path file) {
         if (!Files.isRegularFile(file)) {
             throw new ConfigurationException("No se encontró config.txt en "
-                    + file.toAbsolutePath() + ". Copie config.txt como config.txt "
+                    + file.toAbsolutePath() + ". Copie config.example.txt como config.txt "
                     + "y complete sus datos.");
         }
         Map<String, String> map = new HashMap<>();

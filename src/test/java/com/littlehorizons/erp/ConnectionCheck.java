@@ -32,17 +32,22 @@ public final class ConnectionCheck {
             }
         });
 
-        check("schema has the expected 24 tables", () -> {
+        check("schema has the expected 25 tables", () -> {
             String sql = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE()";
             try (Connection connection = DatabaseConnection.getInstance().getConnection();
                  PreparedStatement statement = connection.prepareStatement(sql);
                  ResultSet rs = statement.executeQuery()) {
                 rs.next();
-                return rs.getInt(1) == 24;
+                return rs.getInt(1) == 25;
             }
         });
 
         check("catalog data is loaded (12 grade levels, 12 payment concepts)", () -> count("grados") == 12 && count("conceptos_pago") == 12);
+
+        check("payments and receipt counters are loaded (the counter equals the last receipt)", () -> count("pagos") >= 500
+                && count("consecutivos") == 2
+                && scalarLong("SELECT ultimo_numero FROM consecutivos WHERE tipo = 'Recibo'")
+                == scalarLong("SELECT MAX(CAST(SUBSTRING(numero_recibo, 5) AS UNSIGNED)) FROM pagos WHERE numero_recibo LIKE 'REC-%'"));
 
         check("duplicate key is translated (1062)", () -> translated(
                 "INSERT INTO grados (nombre_grado, nivel_numerico) VALUES ('Once', 99)",
@@ -64,6 +69,15 @@ public final class ConnectionCheck {
 
         System.out.println(failures == 0 ? "\nALL CHECKS PASSED" : "\n" + failures + " CHECK(S) FAILED");
         System.exit(failures == 0 ? 0 : 1);
+    }
+
+    private static long scalarLong(String sql) throws SQLException, DaoException {
+        try (Connection connection = DatabaseConnection.getInstance().getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet rs = statement.executeQuery()) {
+            rs.next();
+            return rs.getLong(1);
+        }
     }
 
     private static int count(String table) throws SQLException, DaoException {

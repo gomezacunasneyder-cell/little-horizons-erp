@@ -8,6 +8,7 @@ import com.littlehorizons.erp.model.entity.AcademicRecord;
 import com.littlehorizons.erp.model.entity.AttendanceRecord;
 import com.littlehorizons.erp.model.entity.Enrollment;
 import com.littlehorizons.erp.model.enums.AttendanceStatus;
+import com.littlehorizons.erp.util.Money;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -186,6 +187,11 @@ public final class ConsoleInput {
             }
             return AttendanceStatus.values()[choice - 1];
         });
+    }
+
+    /** An amount in pesos typed without thousand separators (see Money.parse). */
+    public BigDecimal readMoney(String prompt) {
+        return read(prompt, Money::parse);
     }
 
     /** Academic year: Enter means the current year. */

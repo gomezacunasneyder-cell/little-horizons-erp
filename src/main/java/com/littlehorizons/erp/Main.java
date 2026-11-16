@@ -8,6 +8,8 @@ import com.littlehorizons.erp.controller.ClubController;
 import com.littlehorizons.erp.controller.ClubMembershipController;
 import com.littlehorizons.erp.controller.EventController;
 import com.littlehorizons.erp.controller.EventParticipationController;
+import com.littlehorizons.erp.controller.PaymentConceptController;
+import com.littlehorizons.erp.controller.StudentPriceController;
 import com.littlehorizons.erp.controller.EnrollmentController;
 import com.littlehorizons.erp.controller.GradeController;
 import com.littlehorizons.erp.controller.GradeReportController;
@@ -27,6 +29,7 @@ import com.littlehorizons.erp.util.ErrorLogger;
 import com.littlehorizons.erp.view.AcademicMenuView;
 import com.littlehorizons.erp.view.AttendanceMenuView;
 import com.littlehorizons.erp.view.ClubMenuView;
+import com.littlehorizons.erp.view.ConceptMenuView;
 import com.littlehorizons.erp.view.EventMenuView;
 import com.littlehorizons.erp.view.ExtracurricularMenuView;
 import com.littlehorizons.erp.view.AssignmentMenuView;
@@ -90,6 +93,9 @@ public final class Main {
         EventController events = new EventController(daos.eventDao(), logger);
         EventParticipationController eventParticipations = new EventParticipationController(
                 daos.eventParticipationDao(), daos.eventDao(), logger);
+        PaymentConceptController paymentConcepts = new PaymentConceptController(daos.paymentConceptDao(), logger);
+        StudentPriceController studentPrices = new StudentPriceController(
+                daos.studentConceptPriceDao(), daos.paymentConceptDao(), logger);
 
         MenuView studentModule = new StudentMenuView(input, output, students, guardians,
                 new GuardianMenuView(input, output, students, guardians),
@@ -107,7 +113,9 @@ public final class Main {
                 new ClubMenuView(input, output, clubs, clubMemberships, teachers, students),
                 new EventMenuView(input, output, events, eventParticipations, teachers, students));
 
+        MenuView financeModule = new ConceptMenuView(input, output, paymentConcepts, studentPrices, students);
+
         new MainMenuView(input, output, startup,
-                Map.of(1, studentModule, 2, academicModule, 3, teacherModule, 4, extracurricularModule)).start();
+                Map.of(1, studentModule, 2, academicModule, 3, teacherModule, 4, extracurricularModule, 5, financeModule)).start();
     }
 }

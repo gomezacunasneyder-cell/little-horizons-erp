@@ -42,6 +42,9 @@
 --            consecutivos; el anio es obligatorio; y se agrega mes_cuota para saber que cuota de pension
 --            se pago (base de la deteccion de morosos). Se eliminaron el periodo y las notas, que
 --            ninguna pantalla usa.
+-- [CAMBIO 10] Facturas (modulo 3.3): la tabla facturas se rehizo (ya no es 1 factura = 1 pago ni guarda un PDF):
+--             ahora tiene estudiante, cliente (acudiente), subtotal, IVA, total, CUFE de 96 caracteres,
+--             resolucion simulada y el nombre del archivo TXT; las lineas van en la tabla nueva detalle_factura.
 --
 -- ADVERTENCIA: la primera sentencia ELIMINA la base erp_little_horizons si existe.
 -- Ejecutar este archivo completo borra todos los datos y los vuelve a crear.
@@ -429,21 +432,56 @@ CREATE TABLE pagos (
     INDEX idx_recibo (numero_recibo)
 ) ENGINE=InnoDB COMMENT='Registro de todos los pagos realizados';
 
--- Tabla de facturas electrónicas
+-- Tabla de facturas electrónicas [CAMBIO 10]
+-- Una factura es de UN estudiante, esta a nombre de UN acudiente (el cliente) y agrupa uno o varios pagos
+-- (ver detalle_factura). El numero sale de la tabla consecutivos (tipo 'Factura'), con el mismo bloqueo
+-- que el recibo. El CUFE es un hash SHA-384 simulado. Cada factura se guarda ademas como archivo de texto
+-- (carpeta invoices/, nombre_archivo = factura_000001.txt); la tabla solo recuerda el nombre.
 CREATE TABLE facturas (
     id_factura INT AUTO_INCREMENT PRIMARY KEY,
-    numero_factura VARCHAR(50) NOT NULL UNIQUE COMMENT 'Número consecutivo de factura',
-    id_pago INT NOT NULL COMMENT 'Pago asociado a esta factura',
-    fecha_emision DATE NOT NULL,
-    cufe VARCHAR(100) COMMENT 'Código Único de Factura Electrónica (simulado)',
-    nombre_archivo_pdf VARCHAR(255) COMMENT 'Nombre del archivo PDF generado',
-    ruta_archivo VARCHAR(500) COMMENT 'Ruta completa donde se guardó el PDF',
+    numero_factura VARCHAR(50) NOT NULL UNIQUE COMMENT 'Consecutivo FE-000001 asignado por el sistema',
+    id_estudiante INT NOT NULL,
+    id_acudiente INT NOT NULL COMMENT 'Cliente: acudiente a cuyo nombre se factura',
+    fecha_emision DATETIME NOT NULL,
+    subtotal DECIMAL(12,2) NOT NULL COMMENT 'Suma de los valores sin IVA',
+    valor_iva DECIMAL(12,2) NOT NULL,
+    total DECIMAL(12,2) NOT NULL,
+    cufe CHAR(96) NOT NULL UNIQUE COMMENT 'Codigo Unico de Factura Electronica (simulado, SHA-384)',
+    resolucion VARCHAR(255) NOT NULL COMMENT 'Resolucion de habilitacion simulada vigente al emitir',
+    nombre_archivo VARCHAR(100) NOT NULL UNIQUE COMMENT 'Archivo de texto generado, ej: factura_000001.txt',
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_pago) REFERENCES pagos(id_pago) ON DELETE RESTRICT, -- [CAMBIO 3]
-    INDEX idx_numero_factura (numero_factura),
-    INDEX idx_fecha_emision (fecha_emision),
-    INDEX idx_pago (id_pago)
+    FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_estudiante) ON DELETE RESTRICT,
+    FOREIGN KEY (id_acudiente) REFERENCES acudientes(id_acudiente) ON DELETE RESTRICT,
+    CHECK (subtotal > 0),
+    CHECK (valor_iva >= 0),
+    CHECK (total = subtotal + valor_iva),
+    INDEX idx_estudiante (id_estudiante),
+    INDEX idx_acudiente (id_acudiente),
+    INDEX idx_fecha_emision (fecha_emision)
 ) ENGINE=InnoDB COMMENT='Registro de facturas electrónicas generadas';
+
+-- Lineas de la factura [CAMBIO 10]: una por pago facturado. id_pago es UNIQUE: un pago no se puede facturar
+-- dos veces (esa es la unica barrera, sirve tambien si dos personas facturan lo mismo a la vez). El pago ya
+-- incluye el IVA: valor_unitario es el valor SIN IVA y total es lo que realmente se pago.
+CREATE TABLE detalle_factura (
+    id_detalle INT AUTO_INCREMENT PRIMARY KEY,
+    id_factura INT NOT NULL,
+    id_pago INT NOT NULL UNIQUE,
+    descripcion VARCHAR(200) NOT NULL,
+    cantidad INT NOT NULL DEFAULT 1,
+    valor_unitario DECIMAL(12,2) NOT NULL COMMENT 'Valor por unidad sin IVA',
+    porcentaje_iva DECIMAL(5,2) NOT NULL DEFAULT 0,
+    subtotal DECIMAL(12,2) NOT NULL COMMENT 'cantidad x valor_unitario',
+    valor_iva DECIMAL(12,2) NOT NULL,
+    total DECIMAL(12,2) NOT NULL,
+    FOREIGN KEY (id_factura) REFERENCES facturas(id_factura) ON DELETE RESTRICT,
+    FOREIGN KEY (id_pago) REFERENCES pagos(id_pago) ON DELETE RESTRICT,
+    CHECK (cantidad > 0),
+    CHECK (porcentaje_iva BETWEEN 0 AND 100),
+    CHECK (subtotal = cantidad * valor_unitario),
+    CHECK (total = subtotal + valor_iva),
+    INDEX idx_factura (id_factura)
+) ENGINE=InnoDB COMMENT='Pagos incluidos en cada factura';
 
 -- ============================================
 -- 5. MÓDULO DE GESTIÓN DE RECURSOS

@@ -32,13 +32,13 @@ public final class ConnectionCheck {
             }
         });
 
-        check("schema has the expected 25 tables", () -> {
+        check("schema has the expected 26 tables", () -> {
             String sql = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE()";
             try (Connection connection = DatabaseConnection.getInstance().getConnection();
                  PreparedStatement statement = connection.prepareStatement(sql);
                  ResultSet rs = statement.executeQuery()) {
                 rs.next();
-                return rs.getInt(1) == 25;
+                return rs.getInt(1) == 26;
             }
         });
 
@@ -47,7 +47,9 @@ public final class ConnectionCheck {
         check("payments and receipt counters are loaded (the counter equals the last receipt)", () -> count("pagos") >= 500
                 && count("consecutivos") == 2
                 && scalarLong("SELECT ultimo_numero FROM consecutivos WHERE tipo = 'Recibo'")
-                == scalarLong("SELECT MAX(CAST(SUBSTRING(numero_recibo, 5) AS UNSIGNED)) FROM pagos WHERE numero_recibo LIKE 'REC-%'"));
+                == scalarLong("SELECT MAX(CAST(SUBSTRING(numero_recibo, 5) AS UNSIGNED)) FROM pagos WHERE numero_recibo LIKE 'REC-%'")
+                && scalarLong("SELECT ultimo_numero FROM consecutivos WHERE tipo = 'Factura'")
+                == scalarLong("SELECT COALESCE(MAX(CAST(SUBSTRING(numero_factura, 4) AS UNSIGNED)), 0) FROM facturas"));
 
         check("duplicate key is translated (1062)", () -> translated(
                 "INSERT INTO grados (nombre_grado, nivel_numerico) VALUES ('Once', 99)",

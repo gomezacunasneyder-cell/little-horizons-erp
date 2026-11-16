@@ -16,3 +16,18 @@ db.password=your_password
 # A student is reported when he or she has MORE than this number of unexcused absences ("Ausente")
 # in the same week. If the key is missing the program uses 3.
 # attendance.weekly.absence.limit=3
+
+# --- Optional: electronic invoices, simulated (module 3.3) ---
+# Data printed on every invoice. All of it is fictional; if a key is missing the value shown here is used.
+# billing.nit=901234567-8
+# billing.address=Carrera 15 # 85-30, Bogotá D.C.
+# billing.phone=(601) 745 2100
+# billing.email=facturacion@littlehorizons.edu.co
+# Simulated DIAN authorization: number, date (yyyy-mm-dd, valid for 24 months) and numbering range.
+# billing.resolution.number=18760000001
+# billing.resolution.date=2025-12-15
+# billing.resolution.from=1
+# billing.resolution.to=50000
+# Invented key used inside the CUFE hash, and the folder where factura_000001.txt files are saved.
+# billing.technical.key=fc8eab76-ce3a-4b5c-9d41-2e6a1d7f0b93
+# billing.invoices.dir=invoices

@@ -11,6 +11,7 @@ import com.littlehorizons.erp.controller.EventParticipationController;
 import com.littlehorizons.erp.controller.PaymentConceptController;
 import com.littlehorizons.erp.controller.InvoiceController;
 import com.littlehorizons.erp.controller.PaymentController;
+import com.littlehorizons.erp.controller.ResourceController;
 import com.littlehorizons.erp.controller.finance.BillingProfile;
 import com.littlehorizons.erp.controller.finance.InvoiceFileStore;
 import com.littlehorizons.erp.controller.StudentPriceController;
@@ -38,6 +39,8 @@ import com.littlehorizons.erp.view.ConceptMenuView;
 import com.littlehorizons.erp.view.FinancialMenuView;
 import com.littlehorizons.erp.view.InvoiceMenuView;
 import com.littlehorizons.erp.view.PaymentMenuView;
+import com.littlehorizons.erp.view.ResourceMenuView;
+import com.littlehorizons.erp.view.ResourcesMenuView;
 import com.littlehorizons.erp.view.EventMenuView;
 import com.littlehorizons.erp.view.ExtracurricularMenuView;
 import com.littlehorizons.erp.view.AssignmentMenuView;
@@ -137,7 +140,11 @@ public final class Main {
                 new PaymentMenuView(input, output, payments, debtors, guardians, paymentConcepts, students, invoices),
                 new InvoiceMenuView(input, output, invoices, guardians, students));
 
+        ResourceController resources = new ResourceController(daos.resourceDao(), logger);
+        MenuView resourceModule = new ResourcesMenuView(input, output, new ResourceMenuView(input, output, resources));
+
         new MainMenuView(input, output, startup,
-                Map.of(1, studentModule, 2, academicModule, 3, teacherModule, 4, extracurricularModule, 5, financeModule)).start();
+                Map.of(1, studentModule, 2, academicModule, 3, teacherModule, 4, extracurricularModule,
+                        5, financeModule, 6, resourceModule)).start();
     }
 }

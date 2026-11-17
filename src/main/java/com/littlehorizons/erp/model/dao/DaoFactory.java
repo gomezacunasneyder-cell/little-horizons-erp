@@ -44,4 +44,6 @@ public interface DaoFactory {
     PaymentDao paymentDao();
 
     InvoiceDao invoiceDao();
+
+    ResourceDao resourceDao();
 }

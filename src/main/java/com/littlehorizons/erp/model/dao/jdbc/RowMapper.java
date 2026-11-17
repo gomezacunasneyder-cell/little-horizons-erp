@@ -218,6 +218,16 @@ final class RowMapper {
         return concept;
     }
 
+    /** Needs the columns of JdbcResourceDao.RESOURCE_COLUMNS (the category comes from the joined categorias_recurso). */
+    static Resource resource(ResultSet rs) throws SQLException {
+        Resource resource = new Resource(rs.getString("codigo_recurso"), rs.getString("nombre_recurso"),
+                ResourceCategory.fromDbLabel(rs.getString("nombre_categoria")), rs.getString("descripcion"),
+                date(rs, "fecha_adquisicion"), rs.getString("ubicacion_fisica"));
+        resource.setId(rs.getInt("id_recurso"));
+        resource.setStatus(ResourceStatus.fromDbLabel(rs.getString("estado_recurso")));
+        return resource;
+    }
+
     /** Needs the concept columns plus anio_academico, monto_ajustado and motivo; the student is already known. */
     static StudentConceptPrice studentPrice(ResultSet rs, Student student) throws SQLException {
         return new StudentConceptPrice(student, concept(rs), rs.getInt("anio_academico"),

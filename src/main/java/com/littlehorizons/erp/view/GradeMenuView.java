@@ -192,7 +192,7 @@ public final class GradeMenuView extends AbstractMenuView {
         result.getData().forEach(this::printYearReport);
     }
 
-    private void showCourseAverages() {
+    void showCourseAverages() {
         Result<List<GradeLevel>> levels = assignments.grades();
         if (!levels.isSuccess()) {
             output.error(levels.getMessage());

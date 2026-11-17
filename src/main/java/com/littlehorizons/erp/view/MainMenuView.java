@@ -3,6 +3,7 @@ package com.littlehorizons.erp.view;
 import com.littlehorizons.erp.controller.Result;
 import com.littlehorizons.erp.controller.StartupController;
 import com.littlehorizons.erp.exception.InputClosedException;
+import com.littlehorizons.erp.exception.MainMenuRequestedException;
 import com.littlehorizons.erp.exception.OperationCancelledException;
 
 import java.util.List;
@@ -49,6 +50,7 @@ public final class MainMenuView {
             return;
         }
         output.success(database.getMessage());
+        output.info("En cualquier pregunta escriba «cancelar» para volver atrás o «inicio» para ir al menú principal.");
 
         boolean running = true;
         while (running) {
@@ -59,6 +61,8 @@ public final class MainMenuView {
                 running = handle(option);
             } catch (InputClosedException e) {
                 running = false;
+            } catch (MainMenuRequestedException e) {
+                output.info("Menú principal.");
             } catch (OperationCancelledException e) {
                 output.info("Use la opción " + EXIT_OPTION + " para salir.");
             }

@@ -84,7 +84,7 @@ public final class ResourceMenuView extends AbstractMenuView {
         }
     }
 
-    private void filter() {
+    void filter() {
         ResourceCategory category = readFilter("Categoría (número): ", ResourceCategory.values(),
                 "Todas las categorías", ResourceCategory::getDisplayName);
         ResourceStatus status = readFilter("Estado (número): ", ResourceStatus.values(),

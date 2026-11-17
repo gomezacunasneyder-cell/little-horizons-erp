@@ -203,7 +203,7 @@ public final class AttendanceMenuView extends AbstractMenuView {
         output.line("% asistencia = (presentes + tardanzas) / clases, sin contar las excusas médicas.");
     }
 
-    private void showAbsenceReport() {
+    void showAbsenceReport() {
         LocalDate defaultFrom = LocalDate.of(LocalDate.now().getYear(), 1, 1);
         LocalDate from = input.readDateOrDefault("Desde (aaaa-mm-dd, Enter = " + defaultFrom + "): ", defaultFrom);
         LocalDate to = input.readDateOrDefault("Hasta (aaaa-mm-dd, Enter = hoy): ", LocalDate.now());

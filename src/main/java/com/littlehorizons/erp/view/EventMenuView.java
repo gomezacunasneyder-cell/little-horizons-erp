@@ -91,7 +91,7 @@ public final class EventMenuView extends AbstractMenuView {
         }
     }
 
-    private void showCalendar() {
+    void showCalendar() {
         Result<EventCalendar> result = events.calendar();
         if (result.isSuccess()) {
             eventPrinter.calendar(result.getData());

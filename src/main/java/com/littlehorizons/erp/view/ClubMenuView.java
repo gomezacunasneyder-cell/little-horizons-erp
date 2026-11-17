@@ -83,7 +83,7 @@ public final class ClubMenuView extends AbstractMenuView {
         }
     }
 
-    private void showCatalog() {
+    void showCatalog() {
         Result<ClubCatalog> result = clubs.catalog();
         if (result.isSuccess()) {
             clubPrinter.catalog(result.getData());

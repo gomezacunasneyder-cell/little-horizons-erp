@@ -1,6 +1,7 @@
 package com.littlehorizons.erp.view;
 
 import com.littlehorizons.erp.exception.InputClosedException;
+import com.littlehorizons.erp.exception.MainMenuRequestedException;
 import com.littlehorizons.erp.exception.OperationCancelledException;
 import com.littlehorizons.erp.exception.ValidationException;
 
@@ -28,7 +29,8 @@ import java.util.regex.Pattern;
  * impossible date, an empty name...).
  *
  * Typing "cancelar" at any prompt throws OperationCancelledException; each menu catches it and
- * goes back one level.
+ * goes back one level. Typing "inicio" throws MainMenuRequestedException, which no menu catches
+ * except the main one, so it jumps straight to the main menu from any depth.
  *
  * The core is read(prompt, parser): the parser is a lambda (Function) that converts the text
  * into the wanted type or throws ValidationException. All the other methods are just
@@ -37,6 +39,7 @@ import java.util.regex.Pattern;
 public final class ConsoleInput {
 
     public static final String CANCEL_KEYWORD = "cancelar";
+    public static final String HOME_KEYWORD = "inicio";
 
     private final Scanner scanner;
     private final ConsoleOutput out;
@@ -51,7 +54,7 @@ public final class ConsoleInput {
         return new ConsoleInput(new Scanner(System.in, StandardCharsets.UTF_8), out);
     }
 
-    /** Shows the prompt and returns the trimmed line. Handles "cancelar" and closed input. */
+    /** Shows the prompt and returns the trimmed line. Handles "cancelar", "inicio" and closed input. */
     public String readLine(String prompt) {
         out.prompt(prompt);
         if (!scanner.hasNextLine()) {
@@ -60,6 +63,9 @@ public final class ConsoleInput {
         String line = scanner.nextLine().trim();
         if (line.equalsIgnoreCase(CANCEL_KEYWORD)) {
             throw new OperationCancelledException();
+        }
+        if (line.equalsIgnoreCase(HOME_KEYWORD)) {
+            throw new MainMenuRequestedException();
         }
         return line;
     }

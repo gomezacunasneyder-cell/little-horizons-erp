@@ -15,6 +15,7 @@ import com.littlehorizons.erp.controller.LoanController;
 import com.littlehorizons.erp.controller.ResourceController;
 import com.littlehorizons.erp.controller.finance.BillingProfile;
 import com.littlehorizons.erp.controller.finance.InvoiceFileStore;
+import com.littlehorizons.erp.controller.StatisticsController;
 import com.littlehorizons.erp.controller.StudentPriceController;
 import com.littlehorizons.erp.controller.EnrollmentController;
 import com.littlehorizons.erp.controller.GradeController;
@@ -42,6 +43,7 @@ import com.littlehorizons.erp.view.InvoiceMenuView;
 import com.littlehorizons.erp.view.PaymentMenuView;
 import com.littlehorizons.erp.view.LoanMenuView;
 import com.littlehorizons.erp.view.ResourceMenuView;
+import com.littlehorizons.erp.view.ReportsMenuView;
 import com.littlehorizons.erp.view.ResourcesMenuView;
 import com.littlehorizons.erp.view.EventMenuView;
 import com.littlehorizons.erp.view.ExtracurricularMenuView;
@@ -121,13 +123,14 @@ public final class Main {
         MenuView teacherModule = new TeacherMenuView(input, output, teachers,
                 new AssignmentMenuView(input, output, assignments, schedules, teachers));
 
-        MenuView academicModule = new AcademicMenuView(input, output,
-                new GradeMenuView(input, output, gradeController, gradeReports, assignments, teachers, students),
-                new AttendanceMenuView(input, output, attendance, attendanceReports, assignments, teachers, students));
+        GradeMenuView gradeMenu = new GradeMenuView(input, output, gradeController, gradeReports, assignments, teachers, students);
+        AttendanceMenuView attendanceMenu = new AttendanceMenuView(input, output, attendance, attendanceReports,
+                assignments, teachers, students);
+        MenuView academicModule = new AcademicMenuView(input, output, gradeMenu, attendanceMenu);
 
-        MenuView extracurricularModule = new ExtracurricularMenuView(input, output,
-                new ClubMenuView(input, output, clubs, clubMemberships, teachers, students),
-                new EventMenuView(input, output, events, eventParticipations, teachers, students));
+        ClubMenuView clubMenu = new ClubMenuView(input, output, clubs, clubMemberships, teachers, students);
+        EventMenuView eventMenu = new EventMenuView(input, output, events, eventParticipations, teachers, students);
+        MenuView extracurricularModule = new ExtracurricularMenuView(input, output, clubMenu, eventMenu);
 
         PaymentController payments = new PaymentController(daos.paymentDao(), daos.paymentConceptDao(),
                 daos.studentConceptPriceDao(), daos.enrollmentDao(), daos.studentDao(), logger);
@@ -138,19 +141,26 @@ public final class Main {
                 () -> new InvoiceFileStore(Path.of(AppConfig.getInstance()
                         .optional("billing.invoices.dir", InvoiceFileStore.DEFAULT_DIRECTORY))),
                 LocalDateTime::now, logger);
+        PaymentMenuView paymentMenu = new PaymentMenuView(input, output, payments, debtors, guardians,
+                paymentConcepts, students, invoices);
         MenuView financeModule = new FinancialMenuView(input, output,
                 new ConceptMenuView(input, output, paymentConcepts, studentPrices, students),
-                new PaymentMenuView(input, output, payments, debtors, guardians, paymentConcepts, students, invoices),
+                paymentMenu,
                 new InvoiceMenuView(input, output, invoices, guardians, students));
 
         ResourceController resources = new ResourceController(daos.resourceDao(), logger);
         LoanController loans = new LoanController(daos.loanDao(), daos.resourceDao(), logger, LocalDate::now);
-        MenuView resourceModule = new ResourcesMenuView(input, output,
-                new ResourceMenuView(input, output, resources),
-                new LoanMenuView(input, output, loans, resources, students, teachers));
+        ResourceMenuView resourceMenu = new ResourceMenuView(input, output, resources);
+        LoanMenuView loanMenu = new LoanMenuView(input, output, loans, resources, students, teachers);
+        MenuView resourceModule = new ResourcesMenuView(input, output, resourceMenu, loanMenu);
+
+        StatisticsController statistics = new StatisticsController(students, teachers, daos.enrollmentDao(), clubs,
+                events, resources, loans, debtors, logger, LocalDate::now);
+        MenuView reportsModule = new ReportsMenuView(input, output, statistics, gradeMenu, attendanceMenu,
+                paymentMenu, clubMenu, eventMenu, resourceMenu, loanMenu);
 
         new MainMenuView(input, output, startup,
                 Map.of(1, studentModule, 2, academicModule, 3, teacherModule, 4, extracurricularModule,
-                        5, financeModule, 6, resourceModule)).start();
+                        5, financeModule, 6, resourceModule, 7, reportsModule)).start();
     }
 }

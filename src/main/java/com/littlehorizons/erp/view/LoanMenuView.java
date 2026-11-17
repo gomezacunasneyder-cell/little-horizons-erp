@@ -114,7 +114,7 @@ public final class LoanMenuView extends AbstractMenuView {
         }
     }
 
-    private void showOverdue() {
+    void showOverdue() {
         Result<OverdueReport> result = loans.overdueReport();
         if (!result.isSuccess()) {
             output.error(result.getMessage());

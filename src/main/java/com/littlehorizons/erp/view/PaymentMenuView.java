@@ -154,7 +154,7 @@ public final class PaymentMenuView extends AbstractMenuView {
         }
     }
 
-    private void debtorsReport() {
+    void debtorsReport() {
         Result<DebtorReport> result = debtors.report(LocalDate.now());
         if (!result.isSuccess()) {
             output.error(result.getMessage());

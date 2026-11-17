@@ -48,6 +48,11 @@
 -- [CAMBIO 11] Recursos (modulo 4.1): la ubicacion fisica y el estado del recurso son obligatorios (el enunciado
 --             pide ambos en cada recurso; el script original permitia NULL). Los 47 recursos de ejemplo estan en
 --             la seccion DML de recursos.
+-- [CAMBIO 12] Prestamos (modulo 4.2): en las dos tablas de prestamos el estado es obligatorio (NOT NULL, por
+--             defecto Activo) y se agrega un CHECK que une estado y fecha real: un prestamo Devuelto tiene fecha
+--             de devolucion real (no anterior al prestamo) y uno Activo o Vencido no la tiene. Asi la base tampoco
+--             deja datos contradictorios aunque se escriba por fuera del programa. Los prestamos de ejemplo estan
+--             en la seccion DML de prestamos.
 --
 -- ADVERTENCIA: la primera sentencia ELIMINA la base erp_little_horizons si existe.
 -- Ejecutar este archivo completo borra todos los datos y los vuelve a crear.
@@ -525,13 +530,16 @@ CREATE TABLE prestamos_estudiante (
     fecha_prestamo DATE NOT NULL,
     fecha_devolucion_esperada DATE NOT NULL,
     fecha_devolucion_real DATE,
-    estado_prestamo ENUM('Activo', 'Devuelto', 'Vencido') DEFAULT 'Activo',
+    estado_prestamo ENUM('Activo', 'Devuelto', 'Vencido') NOT NULL DEFAULT 'Activo', -- [CAMBIO 12]
     observaciones TEXT,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (id_recurso) REFERENCES recursos(id_recurso) ON DELETE CASCADE,
     FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_estudiante) ON DELETE CASCADE,
     CHECK (fecha_devolucion_esperada >= fecha_prestamo), -- [CAMBIO 5]
+    CONSTRAINT prestamo_estudiante_devolucion CHECK ( -- [CAMBIO 12]
+        (estado_prestamo = 'Devuelto' AND fecha_devolucion_real IS NOT NULL AND fecha_devolucion_real >= fecha_prestamo)
+        OR (estado_prestamo <> 'Devuelto' AND fecha_devolucion_real IS NULL)),
     INDEX idx_recurso_estado (id_recurso, estado_prestamo),
     INDEX idx_estudiante (id_estudiante),
     INDEX idx_estado (estado_prestamo),
@@ -546,13 +554,16 @@ CREATE TABLE prestamos_profesor (
     fecha_prestamo DATE NOT NULL,
     fecha_devolucion_esperada DATE NOT NULL,
     fecha_devolucion_real DATE,
-    estado_prestamo ENUM('Activo', 'Devuelto', 'Vencido') DEFAULT 'Activo',
+    estado_prestamo ENUM('Activo', 'Devuelto', 'Vencido') NOT NULL DEFAULT 'Activo', -- [CAMBIO 12]
     observaciones TEXT,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (id_recurso) REFERENCES recursos(id_recurso) ON DELETE CASCADE,
     FOREIGN KEY (id_profesor) REFERENCES profesores(id_profesor) ON DELETE CASCADE,
     CHECK (fecha_devolucion_esperada >= fecha_prestamo), -- [CAMBIO 5]
+    CONSTRAINT prestamo_profesor_devolucion CHECK ( -- [CAMBIO 12]
+        (estado_prestamo = 'Devuelto' AND fecha_devolucion_real IS NOT NULL AND fecha_devolucion_real >= fecha_prestamo)
+        OR (estado_prestamo <> 'Devuelto' AND fecha_devolucion_real IS NULL)),
     INDEX idx_recurso_estado (id_recurso, estado_prestamo),
     INDEX idx_profesor (id_profesor),
     INDEX idx_estado (estado_prestamo),
@@ -6835,6 +6846,82 @@ INSERT INTO recursos (codigo_recurso, nombre_recurso, id_categoria, descripcion,
 ('DID-002', 'Modelo anatómico del cuerpo humano', 5, 'Torso desmontable de 40 cm.', '2022-12-26', 'Bodega de material didáctico', 'Disponible'),
 ('DID-003', 'Juego de ajedrez con reloj', 5, 'Tablero, piezas y reloj para el club de ajedrez.', '2025-04-11', 'Bodega de material didáctico', 'Disponible'),
 ('DID-004', 'Kit de robótica Arduino', 5, 'Placa, sensores y motores para el club de robótica.', '2024-10-08', 'Bodega de material didáctico', 'Disponible');
+
+-- =====================================================================
+-- DML - Modulo de prestamos (fase 4.2): prestamos de recursos a estudiantes y a profesores (datos de prueba ficticios)
+-- 56 prestamos: 36 a estudiantes y 20 a profesores. 10 estan pendientes (5 Activo y 5 Vencido, calculados al 2026-11-16) y 46 ya fueron Devuelto.
+-- Casos de prueba:
+--   * Cada uno de los 10 recursos en estado Prestado tiene EXACTAMENTE un prestamo pendiente (Activo o Vencido);
+--     ningun otro recurso tiene prestamos pendientes.
+--   * Los prestamos Activo se vuelven Vencido solos cuando pasa su fecha programada (el programa lo actualiza al consultar).
+--   * El prestamo mas atrasado (LIB-001) sirve para probar el orden del reporte de vencidos.
+--   * Los prestamos devueltos tienen historia de recursos dados de baja (DEP-005, TEC-008) y en mantenimiento
+--     (LIB-011, LAB-004, TEC-009): por eso esos recursos no se pueden eliminar. LIB-004 (dado de baja) nunca se
+--     presto y si se puede eliminar.
+--   * Hay prestamos devueltos con retraso (la fecha real es posterior a la programada) y otros a tiempo.
+--   * Estudiantes 34 y 35 (Graduado) y 36 (Retirado), y profesores 29 (Licencia) y 30 (Inactivo) tienen un prestamo
+--     devuelto de cuando estaban activos: su historial se puede consultar aunque ya no puedan pedir recursos.
+--   * Los id_recurso son el orden de insercion de los recursos (el comentario de cada fila dice el codigo).
+-- =====================================================================
+INSERT INTO prestamos_estudiante (id_recurso, id_estudiante, fecha_prestamo, fecha_devolucion_esperada, fecha_devolucion_real, estado_prestamo, observaciones) VALUES
+(7, 34, '2026-02-03', '2026-02-17', '2026-02-17', 'Devuelto', 'Préstamo antes de graduarse.'),  -- LIB-007
+(8, 35, '2026-02-10', '2026-02-24', '2026-02-28', 'Devuelto', 'Préstamo antes de graduarse.'),  -- LIB-008
+(32, 36, '2026-02-17', '2026-02-24', '2026-02-24', 'Devuelto', 'Préstamo antes de retirarse.'),  -- DEP-009
+(28, 7, '2026-02-20', '2026-02-27', '2026-03-01', 'Devuelto', NULL),  -- DEP-005
+(12, 25, '2026-02-23', '2026-03-09', '2026-03-09', 'Devuelto', 'Devuelto en buen estado.'),  -- LIB-012
+(13, 39, '2026-02-27', '2026-03-13', '2026-03-13', 'Devuelto', 'Devuelto en buen estado.'),  -- LIB-013
+(12, 31, '2026-04-02', '2026-04-16', '2026-04-21', 'Devuelto', NULL),  -- LIB-012
+(26, 9, '2026-04-06', '2026-04-13', '2026-04-13', 'Devuelto', NULL),  -- DEP-003
+(1, 4, '2026-04-22', '2026-05-06', '2026-05-06', 'Devuelto', 'Se devolvió con la tapa doblada.'),  -- LIB-001
+(11, 37, '2026-05-06', '2026-05-20', '2026-05-20', 'Devuelto', 'Devuelto en buen estado.'),  -- LIB-011
+(12, 7, '2026-05-11', '2026-05-25', '2026-05-25', 'Devuelto', 'Se devolvió con la tapa doblada.'),  -- LIB-012
+(2, 25, '2026-05-19', '2026-06-02', '2026-06-05', 'Devuelto', 'Sin novedad.'),  -- LIB-002
+(14, 27, '2026-05-19', '2026-06-02', '2026-06-02', 'Devuelto', NULL),  -- LIB-014
+(6, 26, '2026-06-15', '2026-06-29', '2026-07-01', 'Devuelto', 'Devuelto en buen estado.'),  -- LIB-006
+(2, 33, '2026-06-16', '2026-06-30', '2026-06-30', 'Devuelto', 'Devuelto en buen estado.'),  -- LIB-002
+(35, 7, '2026-06-19', '2026-06-29', '2026-07-04', 'Devuelto', NULL),  -- TEC-003
+(2, 11, '2026-07-03', '2026-07-17', '2026-07-22', 'Devuelto', NULL),  -- LIB-002
+(35, 26, '2026-07-14', '2026-07-21', '2026-07-30', 'Devuelto', NULL),  -- TEC-003
+(46, 1, '2026-07-20', '2026-07-23', '2026-07-23', 'Devuelto', 'Para una actividad de clase.'),  -- DID-003
+(3, 9, '2026-07-24', '2026-08-07', '2026-08-07', 'Devuelto', 'Se devolvió con la tapa doblada.'),  -- LIB-003
+(24, 21, '2026-08-03', '2026-08-10', '2026-08-10', 'Devuelto', NULL),  -- DEP-001
+(5, 29, '2026-08-04', '2026-08-18', '2026-08-18', 'Devuelto', NULL),  -- LIB-005
+(10, 17, '2026-08-06', '2026-08-20', '2026-08-20', 'Devuelto', NULL),  -- LIB-010
+(9, 23, '2026-08-10', '2026-08-24', '2026-08-24', 'Devuelto', 'Se devolvió con la tapa doblada.'),  -- LIB-009
+(3, 22, '2026-08-14', '2026-08-28', '2026-08-28', 'Devuelto', NULL),  -- LIB-003
+(39, 3, '2026-08-17', '2026-08-24', '2026-08-29', 'Devuelto', 'Devuelto con su cargador.'),  -- TEC-007
+(24, 2, '2026-08-19', '2026-08-29', '2026-09-03', 'Devuelto', 'Para la clase de educación física.'),  -- DEP-001
+(5, 1, '2026-08-31', '2026-09-14', '2026-09-16', 'Devuelto', 'Sin novedad.'),  -- LIB-005
+(10, 19, '2026-09-11', '2026-09-25', '2026-09-25', 'Devuelto', 'Devuelto en buen estado.'),  -- LIB-010
+(9, 18, '2026-09-14', '2026-09-28', '2026-10-03', 'Devuelto', 'Devuelto en buen estado.'),  -- LIB-009
+(36, 28, '2026-09-21', '2026-10-01', '2026-10-01', 'Devuelto', 'Se devolvió con la carga completa.'),  -- TEC-004
+(1, 12, '2026-09-28', '2026-10-12', NULL, 'Vencido', 'Lectura para la clase de español.'),  -- LIB-001
+(38, 3, '2026-10-26', '2026-11-02', NULL, 'Vencido', 'Evaluación de matemáticas.'),  -- TEC-006
+(33, 17, '2026-11-02', '2026-11-09', NULL, 'Vencido', 'Tarea de investigación en tableta.'),  -- TEC-001
+(13, 8, '2026-11-09', '2026-11-23', NULL, 'Activo', 'Apoyo para el club de programación.'),  -- LIB-013
+(34, 21, '2026-11-12', '2026-11-19', NULL, 'Activo', NULL);  -- TEC-002
+
+INSERT INTO prestamos_profesor (id_recurso, id_profesor, fecha_prestamo, fecha_devolucion_esperada, fecha_devolucion_real, estado_prestamo, observaciones) VALUES
+(16, 5, '2026-02-09', '2026-02-16', '2026-02-21', 'Devuelto', 'Guardado limpio en su armario.'),  -- LAB-002
+(19, 30, '2026-02-24', '2026-03-03', '2026-03-05', 'Devuelto', 'Préstamo antes de quedar inactivo.'),  -- LAB-005
+(18, 20, '2026-03-02', '2026-03-12', '2026-03-12', 'Devuelto', 'Guardado limpio en su armario.'),  -- LAB-004
+(37, 29, '2026-03-02', '2026-03-09', '2026-03-09', 'Devuelto', 'Préstamo antes de la licencia.'),  -- TEC-005
+(41, 7, '2026-04-16', '2026-04-23', '2026-04-23', 'Devuelto', 'Devuelto con su cargador.'),  -- TEC-009
+(40, 15, '2026-04-20', '2026-04-23', '2026-04-23', 'Devuelto', NULL),  -- TEC-008
+(20, 23, '2026-05-08', '2026-05-15', '2026-05-24', 'Devuelto', 'Guardado limpio en su armario.'),  -- LAB-006
+(42, 3, '2026-05-22', '2026-05-29', '2026-05-29', 'Devuelto', NULL),  -- TEC-010
+(43, 5, '2026-06-24', '2026-07-04', '2026-07-04', 'Devuelto', 'Devuelto con su cargador.'),  -- TEC-011
+(43, 12, '2026-07-20', '2026-07-27', '2026-07-27', 'Devuelto', 'Sin novedad.'),  -- TEC-011
+(15, 9, '2026-07-22', '2026-07-29', '2026-07-29', 'Devuelto', 'Sin novedad.'),  -- LAB-001
+(47, 5, '2026-08-14', '2026-08-24', '2026-08-27', 'Devuelto', 'Sin novedad.'),  -- DID-004
+(15, 12, '2026-08-17', '2026-08-24', '2026-08-27', 'Devuelto', 'Guardado limpio en su armario.'),  -- LAB-001
+(17, 1, '2026-08-26', '2026-09-05', '2026-09-05', 'Devuelto', 'Sin novedad.'),  -- LAB-003
+(25, 23, '2026-09-10', '2026-09-17', '2026-09-17', 'Devuelto', NULL),  -- DEP-002
+(29, 16, '2026-09-14', '2026-10-14', NULL, 'Vencido', 'Torneo interno de tenis de mesa.'),  -- DEP-006
+(16, 6, '2026-10-19', '2026-11-13', NULL, 'Vencido', 'Práctica de biología, grado noveno.'),  -- LAB-002
+(23, 13, '2026-11-10', '2026-11-24', NULL, 'Activo', 'Salida de observación del club de astronomía.'),  -- LAB-009
+(25, 26, '2026-11-13', '2026-11-20', NULL, 'Activo', NULL),  -- DEP-002
+(42, 5, '2026-11-13', '2026-11-30', NULL, 'Activo', 'Cobertura fotográfica de la feria de ciencias.');  -- TEC-010
 
 -- ============================================
 -- VERIFICACIÓN FINAL

@@ -45,6 +45,9 @@
 -- [CAMBIO 10] Facturas (modulo 3.3): la tabla facturas se rehizo (ya no es 1 factura = 1 pago ni guarda un PDF):
 --             ahora tiene estudiante, cliente (acudiente), subtotal, IVA, total, CUFE de 96 caracteres,
 --             resolucion simulada y el nombre del archivo TXT; las lineas van en la tabla nueva detalle_factura.
+-- [CAMBIO 11] Recursos (modulo 4.1): la ubicacion fisica y el estado del recurso son obligatorios (el enunciado
+--             pide ambos en cada recurso; el script original permitia NULL). Los 47 recursos de ejemplo estan en
+--             la seccion DML de recursos.
 --
 -- ADVERTENCIA: la primera sentencia ELIMINA la base erp_little_horizons si existe.
 -- Ejecutar este archivo completo borra todos los datos y los vuelve a crear.
@@ -503,8 +506,8 @@ CREATE TABLE recursos (
     id_categoria INT NOT NULL,
     descripcion TEXT,
     fecha_adquisicion DATE,
-    ubicacion_fisica VARCHAR(100) COMMENT 'Ubicación física (Biblioteca, Laboratorio 1, etc.)',
-    estado_recurso ENUM('Disponible', 'Prestado', 'En Mantenimiento', 'Dado de Baja') DEFAULT 'Disponible',
+    ubicacion_fisica VARCHAR(100) NOT NULL COMMENT 'Ubicación física (Biblioteca, Laboratorio 1, etc.)', -- [CAMBIO 11] obligatoria
+    estado_recurso ENUM('Disponible', 'Prestado', 'En Mantenimiento', 'Dado de Baja') NOT NULL DEFAULT 'Disponible', -- [CAMBIO 11]
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (id_categoria) REFERENCES categorias_recurso(id_categoria),
@@ -6771,6 +6774,67 @@ INSERT INTO pagos (id_estudiante, id_acudiente, id_concepto, monto_pagado, fecha
 (22, 27, 2, 650000.00, '2026-11-12', 'Efectivo', 'REC-000500', 2026, 11);
 
 INSERT INTO consecutivos (tipo, ultimo_numero) VALUES ('Recibo', 500), ('Factura', 0);
+
+-- =====================================================================
+-- DML - Modulo de recursos: catalogo de recursos prestables (datos de prueba ficticios)
+-- 47 recursos: 14 libros, 9 equipos de laboratorio, 9 deportivos, 11 dispositivos tecnologicos y 4 materiales didacticos.
+-- Estados: 30 Disponible, 10 Prestado, 4 En Mantenimiento, 3 Dado de Baja.
+-- Casos de prueba:
+--   * Los 10 recursos Prestado tendran su prestamo activo (o vencido) en los datos de la fase 4.2;
+--     mientras tanto no se pueden eliminar ni cambiar de estado a mano.
+--   * LIB-002, LIB-003 y LIB-005 no tienen fecha de adquisicion (libros donados), para probar el valor NULL.
+--   * LAB-001 y LAB-002 (y TEC-001 a TEC-005) tienen el mismo nombre y distinto codigo: el codigo es lo unico que no se repite.
+--   * Los id_categoria salen del orden de insercion de categorias_recurso (1 = Libro, 2 = Equipo de Laboratorio,
+--     3 = Equipo Deportivo, 4 = Dispositivo Tecnologico, 5 = Material Didactico).
+-- =====================================================================
+INSERT INTO recursos (codigo_recurso, nombre_recurso, id_categoria, descripcion, fecha_adquisicion, ubicacion_fisica, estado_recurso) VALUES
+('LIB-001', 'Cien años de soledad', 1, 'Novela de Gabriel García Márquez, edición escolar.', '2015-05-17', 'Biblioteca - Estante A1', 'Prestado'),
+('LIB-002', 'El principito', 1, 'Antoine de Saint-Exupéry, lectura de primaria.', NULL, 'Biblioteca - Estante A1', 'Disponible'),
+('LIB-003', 'Don Quijote de la Mancha', 1, 'Edición adaptada para bachillerato.', NULL, 'Biblioteca - Estante A1', 'Disponible'),
+('LIB-004', 'La vorágine', 1, 'José Eustasio Rivera. Dado de baja por deterioro de las páginas.', '2011-10-31', 'Biblioteca - Estante A2', 'Dado de Baja'),
+('LIB-005', 'María', 1, 'Novela de Jorge Isaacs.', NULL, 'Biblioteca - Estante A2', 'Disponible'),
+('LIB-006', 'Diccionario de la lengua española', 1, 'Real Academia Española, edición de consulta.', '2020-11-09', 'Biblioteca - Sala de referencia', 'Disponible'),
+('LIB-007', 'Atlas universal ilustrado', 1, 'Mapas físicos y políticos del mundo.', '2021-10-11', 'Biblioteca - Sala de referencia', 'Disponible'),
+('LIB-008', 'Enciclopedia de ciencias naturales', 1, 'Cuatro tomos con ilustraciones.', '2018-09-01', 'Biblioteca - Estante C1', 'Disponible'),
+('LIB-009', 'Álgebra de Baldor', 1, 'Texto de matemáticas para los grados superiores.', '2013-03-10', 'Biblioteca - Estante B1', 'Disponible'),
+('LIB-010', 'Física conceptual', 1, 'Texto de física para décimo y once.', '2019-07-18', 'Biblioteca - Estante B1', 'Disponible'),
+('LIB-011', 'Historia de Colombia', 1, 'Texto de ciencias sociales. En reencuadernación por desgaste del lomo.', '2016-05-29', 'Biblioteca - Estante B2', 'En Mantenimiento'),
+('LIB-012', 'Harry Potter y la piedra filosofal', 1, 'Novela juvenil de J. K. Rowling.', '2023-10-03', 'Biblioteca - Estante A1', 'Disponible'),
+('LIB-013', 'Fundamentos de programación con Java', 1, 'Texto de apoyo del club de programación.', '2025-10-16', 'Biblioteca - Estante C2', 'Prestado'),
+('LIB-014', 'English Grammar in Use', 1, 'Gramática de inglés nivel intermedio.', '2024-04-01', 'Biblioteca - Estante B2', 'Disponible'),
+('LAB-001', 'Microscopio óptico binocular', 2, 'Aumento hasta 1000x.', '2022-04-30', 'Laboratorio de Ciencias - Armario 1', 'Disponible'),
+('LAB-002', 'Microscopio óptico binocular', 2, 'Aumento hasta 1000x.', '2021-07-06', 'Laboratorio de Ciencias - Armario 1', 'Prestado'),
+('LAB-003', 'Microscopio estereoscópico', 2, 'Para observar muestras de mayor tamaño.', '2022-05-21', 'Laboratorio de Ciencias - Armario 1', 'Disponible'),
+('LAB-004', 'Balanza analítica', 2, 'Precisión de 0,001 g. En calibración con el proveedor.', '2018-01-20', 'Laboratorio de Ciencias - Mesa 3', 'En Mantenimiento'),
+('LAB-005', 'Balanza de triple brazo', 2, 'Capacidad de 610 g.', '2018-06-25', 'Laboratorio de Ciencias - Mesa 3', 'Disponible'),
+('LAB-006', 'Kit de disección', 2, 'Bisturí, pinzas, tijeras y bandeja.', '2022-06-29', 'Laboratorio de Ciencias - Armario 2', 'Disponible'),
+('LAB-007', 'Juego de probetas graduadas', 2, 'Seis probetas de vidrio de 10 a 500 ml.', '2020-08-28', 'Laboratorio de Ciencias - Armario 2', 'Disponible'),
+('LAB-008', 'Multímetro digital', 2, 'Mide voltaje, corriente y resistencia.', '2022-08-26', 'Laboratorio de Física - Armario 1', 'Disponible'),
+('LAB-009', 'Telescopio refractor', 2, 'Telescopio del club de astronomía.', '2022-08-03', 'Laboratorio de Física - Armario 2', 'Prestado'),
+('DEP-001', 'Balón de fútbol número 5', 3, 'Cuero sintético.', '2026-07-23', 'Coliseo - Bodega deportiva', 'Disponible'),
+('DEP-002', 'Balón de baloncesto', 3, 'Tamaño oficial.', '2023-02-07', 'Coliseo - Bodega deportiva', 'Prestado'),
+('DEP-003', 'Balón de voleibol', 3, NULL, '2025-10-15', 'Coliseo - Bodega deportiva', 'Disponible'),
+('DEP-004', 'Juego de conos de entrenamiento', 3, 'Veinte conos de colores.', '2025-11-06', 'Coliseo - Bodega deportiva', 'Disponible'),
+('DEP-005', 'Cuerda de saltar', 3, 'Lote de diez cuerdas. Dadas de baja por desgaste.', '2019-10-20', 'Coliseo - Bodega deportiva', 'Dado de Baja'),
+('DEP-006', 'Raquetas de tenis de mesa', 3, 'Pareja de raquetas con pelotas.', '2024-03-20', 'Coliseo - Bodega deportiva', 'Prestado'),
+('DEP-007', 'Red de voleibol', 3, 'Con postes ajustables.', '2023-04-08', 'Coliseo - Bodega deportiva', 'Disponible'),
+('DEP-008', 'Colchoneta de gimnasia', 3, 'En reparación de la funda.', '2020-06-13', 'Coliseo - Bodega deportiva', 'En Mantenimiento'),
+('DEP-009', 'Cronómetro digital', 3, NULL, '2025-12-27', 'Coliseo - Bodega deportiva', 'Disponible'),
+('TEC-001', 'Tablet Samsung Galaxy Tab A9', 4, '64 GB, con funda protectora.', '2025-01-14', 'Sala de Informática - Carrito de tablets', 'Prestado'),
+('TEC-002', 'Tablet Samsung Galaxy Tab A9', 4, '64 GB, con funda protectora.', '2025-02-03', 'Sala de Informática - Carrito de tablets', 'Prestado'),
+('TEC-003', 'Tablet Samsung Galaxy Tab A9', 4, '64 GB, con funda protectora.', '2025-06-23', 'Sala de Informática - Carrito de tablets', 'Disponible'),
+('TEC-004', 'Tablet Samsung Galaxy Tab A9', 4, '64 GB, con funda protectora.', '2025-10-29', 'Sala de Informática - Carrito de tablets', 'Disponible'),
+('TEC-005', 'Tablet Samsung Galaxy Tab A9', 4, '64 GB, con funda protectora.', '2024-04-02', 'Sala de Informática - Carrito de tablets', 'Disponible'),
+('TEC-006', 'Calculadora científica Casio fx-991LA', 4, 'Permitida en las evaluaciones de matemáticas.', '2023-12-13', 'Sala de Informática - Armario 2', 'Prestado'),
+('TEC-007', 'Calculadora científica Casio fx-991LA', 4, 'Permitida en las evaluaciones de matemáticas.', '2022-07-17', 'Sala de Informática - Armario 2', 'Disponible'),
+('TEC-008', 'Computador portátil Lenovo IdeaPad', 4, 'Dado de baja por obsolescencia.', '2015-09-05', 'Coordinación - Oficina técnica', 'Dado de Baja'),
+('TEC-009', 'Videobeam portátil Epson', 4, 'Pendiente el cambio de la lámpara.', '2020-08-26', 'Sala de Informática - Armario 2', 'En Mantenimiento'),
+('TEC-010', 'Cámara fotográfica Canon', 4, 'Para el club de fotografía.', '2024-08-08', 'Sala de Informática - Armario 2', 'Prestado'),
+('TEC-011', 'Computador portátil Lenovo ThinkPad', 4, 'Para préstamo a docentes.', '2023-10-30', 'Sala de Informática - Armario 2', 'Disponible'),
+('DID-001', 'Mapa mural de Colombia', 5, 'Mapa político y físico.', '2021-08-27', 'Bodega de material didáctico', 'Disponible'),
+('DID-002', 'Modelo anatómico del cuerpo humano', 5, 'Torso desmontable de 40 cm.', '2022-12-26', 'Bodega de material didáctico', 'Disponible'),
+('DID-003', 'Juego de ajedrez con reloj', 5, 'Tablero, piezas y reloj para el club de ajedrez.', '2025-04-11', 'Bodega de material didáctico', 'Disponible'),
+('DID-004', 'Kit de robótica Arduino', 5, 'Placa, sensores y motores para el club de robótica.', '2024-10-08', 'Bodega de material didáctico', 'Disponible');
 
 -- ============================================
 -- VERIFICACIÓN FINAL

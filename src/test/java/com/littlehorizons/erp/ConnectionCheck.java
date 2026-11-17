@@ -51,6 +51,10 @@ public final class ConnectionCheck {
                 && scalarLong("SELECT ultimo_numero FROM consecutivos WHERE tipo = 'Factura'")
                 == scalarLong("SELECT COALESCE(MAX(CAST(SUBSTRING(numero_factura, 4) AS UNSIGNED)), 0) FROM facturas"));
 
+        check("resource catalog is loaded (5 categories, at least 30 resources, every one with a location and a state)", () ->
+                count("categorias_recurso") == 5 && count("recursos") >= 30
+                        && scalarLong("SELECT COUNT(*) FROM recursos WHERE ubicacion_fisica IS NULL OR estado_recurso IS NULL") == 0);
+
         check("duplicate key is translated (1062)", () -> translated(
                 "INSERT INTO grados (nombre_grado, nivel_numerico) VALUES ('Once', 99)",
                 "valor único"));

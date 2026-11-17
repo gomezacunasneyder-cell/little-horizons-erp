@@ -1,5 +1,7 @@
 package com.littlehorizons.erp.controller;
 
+import java.util.function.Function;
+
 /**
  * What every controller method returns to the view: whether it worked, a message for the user
  * and, on success, the data. The view only reads it and prints; it never sees an exception or
@@ -28,6 +30,11 @@ public final class Result<T> {
 
     public static <T> Result<T> fail(String message) {
         return new Result<>(false, null, message);
+    }
+
+    /** Converts the data of a successful result (a failure stays a failure with its message). */
+    public <R> Result<R> map(Function<? super T, ? extends R> converter) {
+        return success ? new Result<>(true, converter.apply(data), message) : new Result<>(false, null, message);
     }
 
     public boolean isSuccess() {

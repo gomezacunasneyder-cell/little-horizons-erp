@@ -228,6 +228,28 @@ final class RowMapper {
         return resource;
     }
 
+    /**
+     * Needs the columns of JdbcLoanDao.select: the loan, the borrower (tipo_prestatario tells which kind) and the
+     * resource columns. The borrower state is read with the enum of its own kind, so "who may borrow" is decided
+     * only by the Borrower factories.
+     */
+    static Loan loan(ResultSet rs) throws SQLException {
+        BorrowerType type = BorrowerType.fromDbLabel(rs.getString("tipo_prestatario"));
+        int borrowerId = rs.getInt("id_prestatario");
+        String name = rs.getString("nombre_prestatario");
+        String document = rs.getString("numero_documento");
+        String email = rs.getString("correo_electronico");
+        String phone = rs.getString("telefono");
+        String status = rs.getString("estado_prestatario");
+        Borrower borrower = switch (type) {
+            case STUDENT -> Borrower.student(borrowerId, name, document, email, phone, StudentStatus.fromDbLabel(status));
+            case TEACHER -> Borrower.teacher(borrowerId, name, document, email, phone, TeacherStatus.fromDbLabel(status));
+        };
+        return Loan.restore(rs.getInt("id_prestamo"), resource(rs), borrower, date(rs, "fecha_prestamo"),
+                date(rs, "fecha_devolucion_esperada"), date(rs, "fecha_devolucion_real"),
+                LoanStatus.fromDbLabel(rs.getString("estado_prestamo")), rs.getString("observaciones"));
+    }
+
     /** Needs the concept columns plus anio_academico, monto_ajustado and motivo; the student is already known. */
     static StudentConceptPrice studentPrice(ResultSet rs, Student student) throws SQLException {
         return new StudentConceptPrice(student, concept(rs), rs.getInt("anio_academico"),

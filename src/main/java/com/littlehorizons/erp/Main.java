@@ -11,6 +11,7 @@ import com.littlehorizons.erp.controller.EventParticipationController;
 import com.littlehorizons.erp.controller.PaymentConceptController;
 import com.littlehorizons.erp.controller.InvoiceController;
 import com.littlehorizons.erp.controller.PaymentController;
+import com.littlehorizons.erp.controller.LoanController;
 import com.littlehorizons.erp.controller.ResourceController;
 import com.littlehorizons.erp.controller.finance.BillingProfile;
 import com.littlehorizons.erp.controller.finance.InvoiceFileStore;
@@ -39,6 +40,7 @@ import com.littlehorizons.erp.view.ConceptMenuView;
 import com.littlehorizons.erp.view.FinancialMenuView;
 import com.littlehorizons.erp.view.InvoiceMenuView;
 import com.littlehorizons.erp.view.PaymentMenuView;
+import com.littlehorizons.erp.view.LoanMenuView;
 import com.littlehorizons.erp.view.ResourceMenuView;
 import com.littlehorizons.erp.view.ResourcesMenuView;
 import com.littlehorizons.erp.view.EventMenuView;
@@ -56,6 +58,7 @@ import com.littlehorizons.erp.view.ConsoleOutput;
 import com.littlehorizons.erp.view.MainMenuView;
 
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -141,7 +144,10 @@ public final class Main {
                 new InvoiceMenuView(input, output, invoices, guardians, students));
 
         ResourceController resources = new ResourceController(daos.resourceDao(), logger);
-        MenuView resourceModule = new ResourcesMenuView(input, output, new ResourceMenuView(input, output, resources));
+        LoanController loans = new LoanController(daos.loanDao(), daos.resourceDao(), logger, LocalDate::now);
+        MenuView resourceModule = new ResourcesMenuView(input, output,
+                new ResourceMenuView(input, output, resources),
+                new LoanMenuView(input, output, loans, resources, students, teachers));
 
         new MainMenuView(input, output, startup,
                 Map.of(1, studentModule, 2, academicModule, 3, teacherModule, 4, extracurricularModule,

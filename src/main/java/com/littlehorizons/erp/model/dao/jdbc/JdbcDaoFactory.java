@@ -110,4 +110,9 @@ public final class JdbcDaoFactory implements DaoFactory {
     public ResourceDao resourceDao() {
         return new JdbcResourceDao(database);
     }
+
+    @Override
+    public LoanDao loanDao() {
+        return new JdbcLoanDao(database);
+    }
 }

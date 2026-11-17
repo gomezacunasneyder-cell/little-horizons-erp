@@ -55,6 +55,13 @@ public final class ConnectionCheck {
                 count("categorias_recurso") == 5 && count("recursos") >= 30
                         && scalarLong("SELECT COUNT(*) FROM recursos WHERE ubicacion_fisica IS NULL OR estado_recurso IS NULL") == 0);
 
+        check("loan data is loaded (at least 30 loans in total, both tables used, every Prestado resource has exactly one open loan)", () ->
+                count("prestamos_estudiante") + count("prestamos_profesor") >= 30
+                        && count("prestamos_estudiante") > 0 && count("prestamos_profesor") > 0
+                        && scalarLong("SELECT COUNT(*) FROM recursos r WHERE r.estado_recurso = 'Prestado' AND "
+                        + "(SELECT COUNT(*) FROM prestamos_estudiante p WHERE p.id_recurso = r.id_recurso AND p.estado_prestamo <> 'Devuelto') "
+                        + "+ (SELECT COUNT(*) FROM prestamos_profesor p WHERE p.id_recurso = r.id_recurso AND p.estado_prestamo <> 'Devuelto') <> 1") == 0);
+
         check("duplicate key is translated (1062)", () -> translated(
                 "INSERT INTO grados (nombre_grado, nivel_numerico) VALUES ('Once', 99)",
                 "valor único"));

@@ -1,7 +1,7 @@
 package com.littlehorizons.erp.controller;
 
 import com.littlehorizons.erp.exception.DaoException;
-import com.littlehorizons.erp.model.dao.jdbc.DatabaseConnection;
+import com.littlehorizons.erp.model.dao.ConnectionVerifier;
 import com.littlehorizons.erp.util.ErrorLogger;
 
 /**
@@ -11,10 +11,10 @@ import com.littlehorizons.erp.util.ErrorLogger;
  */
 public class StartupController {
 
-    private final DatabaseConnection database;
+    private final ConnectionVerifier database;
     private final ErrorLogger logger;
 
-    public StartupController(DatabaseConnection database, ErrorLogger logger) {
+    public StartupController(ConnectionVerifier database, ErrorLogger logger) {
         this.database = database;
         this.logger = logger;
     }

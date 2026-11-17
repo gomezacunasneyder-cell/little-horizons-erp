@@ -2,6 +2,7 @@ package com.littlehorizons.erp.model.dao.jdbc;
 
 import com.littlehorizons.erp.exception.ConfigurationException;
 import com.littlehorizons.erp.exception.DaoException;
+import com.littlehorizons.erp.model.dao.ConnectionVerifier;
 import com.littlehorizons.erp.util.AppConfig;
 
 import java.sql.Connection;
@@ -21,7 +22,7 @@ import java.sql.SQLException;
  * DriverManager looks at the start of the url ("jdbc:mysql:") and picks the driver that accepts
  * it; since JDBC 4 the driver jar registers itself, so Class.forName(...) is not needed.
  */
-public final class DatabaseConnection {
+public final class DatabaseConnection implements ConnectionVerifier {
 
     private static final DatabaseConnection INSTANCE = new DatabaseConnection();
 
@@ -53,6 +54,7 @@ public final class DatabaseConnection {
     }
 
     /** Opens and immediately closes a connection, to verify that the database is reachable. */
+    @Override
     public void verify() throws DaoException {
         try (Connection connection = getConnection()) {
             if (!connection.isValid(3)) {

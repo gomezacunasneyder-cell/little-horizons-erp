@@ -1,5 +1,7 @@
 package com.littlehorizons.erp;
 
+import com.littlehorizons.erp.controller.Result;
+import com.littlehorizons.erp.controller.StartupController;
 import com.littlehorizons.erp.exception.DaoException;
 import com.littlehorizons.erp.model.dao.jdbc.DatabaseConnection;
 import com.littlehorizons.erp.model.dao.jdbc.SqlErrorTranslator;
@@ -78,6 +80,19 @@ public final class ConnectionCheck {
             ErrorLogger.getInstance().error("ConnectionCheck sample error", new IllegalStateException("sample"));
             String content = Files.readString(ErrorLogger.getInstance().getLogFile());
             return content.contains("[ERROR] ConnectionCheck sample error") && content.contains("IllegalStateException");
+        });
+
+ 
+        check("the start-up check works through the ConnectionVerifier interface: real database ok, a failing one gives a failure with its message and ONE new log entry", () -> {
+            java.nio.file.Path logFile = ErrorLogger.getInstance().getLogFile();
+            int logLengthBefore = Files.exists(logFile) ? Files.readString(logFile).length() : 0;
+            Result<Void> real = new StartupController(DatabaseConnection.getInstance(), ErrorLogger.getInstance()).checkDatabase();
+            Result<Void> broken = new StartupController(() -> {
+                throw new DaoException("No se pudo conectar (simulado).");
+            }, ErrorLogger.getInstance()).checkDatabase();
+            String newLog = Files.readString(logFile).substring(logLengthBefore);
+            return real.isSuccess() && !broken.isSuccess() && "No se pudo conectar (simulado).".equals(broken.getMessage())
+                    && newLog.split("Startup check failed: No se pudo conectar \\(simulado\\)\\.", -1).length == 2;
         });
 
         System.out.println(failures == 0 ? "\nALL CHECKS PASSED" : "\n" + failures + " CHECK(S) FAILED");
